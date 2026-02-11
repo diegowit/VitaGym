@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.vitagym.presentation.auth.login.LoginScreen
+import com.example.vitagym.presentation.auth.register.RegisterScreen
 import com.example.vitagym.presentation.dashboard.DashboardScreen
 import com.example.vitagym.presentation.dashboard.WelcomeScreen
 
@@ -32,11 +33,10 @@ fun NavigationWrapper() {
 
         // Register Screen
         composable<Register> {
-            // RegisterScreen(
-            //     navigateToHome = { navController.navigate(Dashboard) }
-            // )
-            // For now, just navigate to Dashboard
-            DashboardScreen()
+            RegisterScreen(
+                navigateToHome = { navController.navigate(Dashboard) },
+                navigateToLogin = { navController.navigate(Login) }
+            )
         }
 
         // Dashboard Screen
