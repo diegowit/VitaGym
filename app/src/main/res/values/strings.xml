@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">VitaGym</string>
+    ...
+    <string name="button_addWorkout">Add Workout</string>
+    <string name="text_Title">Title</string>
+    <string name="text_titleHint">Enter Title</string>
+
+
+    <string name="donateTitle">Welcome Homer</string>
+    <string name="donateSubtitle">Please Give Generously</string>
+    <string name="donateButton">Donate</string>
+    <string name="paypal">PayPal</string>
+    <string name="direct">Direct</string>
+    <string name="amount">Amount</string>
+    <string name="total">Total : </string>
+    <string name="totalSoFar">€%d</string>
+    <string name="limitExceeded">"A Donation of €%d will exceed Maximum Donations of €10000"</string>
+    <string name="reportTitle">Donations List</string>
+    <string name="defaultAmount">00</string>
+    <string name="defaultMethod">N/A</string>
+    <string name="defaultMessage">Go Homer!</string>
+    <string name="enter_message">Enter Message</string>
+    <string name="show_less">Show Less</string>
+    <string name="show_more">Show More</string>
+
+
+
+    ...
+
+</resources>
