@@ -1,9 +1,5 @@
 package com.example.vitagym.presentation.dashboard
 
-T
-Copiar
-
-package com.example.vitagym.presentation.welcome
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
