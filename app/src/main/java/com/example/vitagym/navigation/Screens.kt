@@ -2,9 +2,14 @@ package com.example.vitagym.navigation
 
 import kotlinx.serialization.Serializable
 
+@Serializable
+object Welcome
 
 @Serializable
-object  Login
+object Login
 
 @Serializable
-object  Dashboard
+object Register
+
+@Serializable
+object Dashboard

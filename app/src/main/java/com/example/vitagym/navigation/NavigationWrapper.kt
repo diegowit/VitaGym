@@ -1,23 +1,47 @@
 package com.example.vitagym.navigation
 
+
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.vitagym.presentation.auth.login.LoginScreen
 import com.example.vitagym.presentation.dashboard.DashboardScreen
+import com.example.vitagym.presentation.dashboard.WelcomeScreen
 
 @Composable
-fun NavigationWrapper(){
+fun NavigationWrapper() {
     val navController = rememberNavController()
-    NavHost(navController= navController, startDestination = Login) {
 
-        composable<Login>{
-            LoginScreen{navController.navigate(Dashboard)}
+    NavHost(navController = navController, startDestination = Welcome) {
 
+        // Welcome Screen
+        composable<Welcome> {
+            WelcomeScreen(
+                navigateToLogin = { navController.navigate(Login) },
+                navigateToRegister = { navController.navigate(Register) }
+            )
         }
-composable<Dashboard>{
-    DashboardScreen()
-}
+
+        // Login Screen
+        composable<Login> {
+            LoginScreen(
+                navigateToHome = { navController.navigate(Dashboard) }
+            )
+        }
+
+        // Register Screen
+        composable<Register> {
+            // RegisterScreen(
+            //     navigateToHome = { navController.navigate(Dashboard) }
+            // )
+            // For now, just navigate to Dashboard
+            DashboardScreen()
+        }
+
+        // Dashboard Screen
+        composable<Dashboard> {
+            DashboardScreen()
+        }
     }
 }
