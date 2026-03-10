@@ -14,6 +14,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.vitagym.presentation.auth.AuthRepository
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
@@ -25,6 +27,11 @@ fun RegisterScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val authRepository = remember { AuthRepository() }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -56,10 +63,14 @@ fun RegisterScreen(
         // Name Field
         OutlinedTextField(
             value = name,
-            onValueChange = { name = it },
+            onValueChange = {
+                name = it
+                errorMessage = null
+            },
             label = { Text("Full Name") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            enabled = !isLoading,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Color(0xFF00E5FF),
                 unfocusedBorderColor = Color(0xFF4A4A6A),
@@ -75,10 +86,14 @@ fun RegisterScreen(
         // Email Field
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = {
+                email = it
+                errorMessage = null
+            },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            enabled = !isLoading,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Color(0xFF00E5FF),
                 unfocusedBorderColor = Color(0xFF4A4A6A),
@@ -94,11 +109,16 @@ fun RegisterScreen(
         // Password Field
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = {
+                password = it
+                errorMessage = null
+            },
             label = { Text("Password") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            enabled = !isLoading,
             visualTransformation = PasswordVisualTransformation(),
+
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Color(0xFF00E5FF),
                 unfocusedBorderColor = Color(0xFF4A4A6A),
@@ -114,10 +134,14 @@ fun RegisterScreen(
         // Confirm Password Field
         OutlinedTextField(
             value = confirmPassword,
-            onValueChange = { confirmPassword = it },
+            onValueChange = {
+                confirmPassword = it
+                errorMessage = null
+            },
             label = { Text("Confirm Password") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            enabled = !isLoading,
             visualTransformation = PasswordVisualTransformation(),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Color(0xFF00E5FF),
@@ -131,15 +155,74 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+
+        // Error Message
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage!!,
+                color = Color(0xFFFF5252),
+                fontSize = 14.sp,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+
+
         // Register Button
         Button(
             onClick = {
-                // one thing TODO: Add validation and Firebase auth later
-                navigateToHome()
+                // Validation
+                when {
+                    name.isBlank() -> {
+                        errorMessage = "Please enter your name"
+                        return@Button
+                    }
+                    email.isBlank() -> {
+                        errorMessage = "Please enter your email"
+                        return@Button
+                    }
+                    password.isBlank() -> {
+                        errorMessage = "Please enter a password"
+                        return@Button
+                    }
+                    password.length < 6 -> {
+                        errorMessage = "Password must be at least 6 characters"
+                        return@Button
+                    }
+                    password != confirmPassword -> {
+                        errorMessage = "Passwords don't match"
+                        return@Button
+                    }
+                }
+
+                scope.launch {
+                    isLoading = true
+                    errorMessage = null
+
+                    val result = authRepository.register(name, email, password)
+
+                    result.onSuccess {
+                        navigateToHome()
+                    }.onFailure { exception ->
+                        errorMessage = when {
+                            exception.message?.contains("email") == true ->
+                                "This email is already registered"
+                            exception.message?.contains("network") == true ->
+                                "Network error. Check your connection"
+                            else -> "Registration failed: ${exception.message}"
+                        }
+                    }
+
+                    isLoading = false
+                }
             },
+
+
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
+            enabled = !isLoading,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF00E5FF),
                 contentColor = Color(0xFF0F0F23)
@@ -154,6 +237,9 @@ fun RegisterScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+
+
+
 
         // Login Link
         Row(

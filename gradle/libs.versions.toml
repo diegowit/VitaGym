@@ -10,7 +10,8 @@ kotlin = "2.0.21"
 composeBom = "2024.09.00"
 timber = "1.5.1"
 materialIconsExtended = "1.7.8"
-
+firebaseBom = "33.10.0"
+googleServices = "4.4.2"
 
 navigationCompose = "2.8.0"
 kotlinxSerialization = "1.6.3"
@@ -35,7 +36,11 @@ timber = { module = "com.github.ajalt:timberkt", version.ref = "timber" }
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 jetbrainsKotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

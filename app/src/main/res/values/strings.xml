@@ -1,10 +1,12 @@
 <resources>
     <string name="app_name">VitaGym</string>
-    ...
+
+
+    <string name="default_web_client_id">775681389665-0hrivig8ceaknrsui1q9ob81tms04f7q.apps.googleusercontent.com</string>
+
     <string name="button_addWorkout">Add Workout</string>
     <string name="text_Title">Title</string>
     <string name="text_titleHint">Enter Title</string>
-
 
     <string name="donateTitle">Welcome Homer</string>
     <string name="donateSubtitle">Please Give Generously</string>
@@ -22,9 +24,4 @@
     <string name="enter_message">Enter Message</string>
     <string name="show_less">Show Less</string>
     <string name="show_more">Show More</string>
-
-
-
-    ...
-
 </resources>
