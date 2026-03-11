@@ -2,6 +2,8 @@ package com.example.vitagym.navigation
 
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,6 +20,7 @@ fun NavigationWrapper() {
     val navController = rememberNavController()
     // Shared ViewModel to persist workouts during the app session
     val workoutViewModel: WorkoutViewModel = viewModel()
+    val workouts by workoutViewModel.workouts.collectAsStateWithLifecycle()
 
     NavHost(navController = navController, startDestination = Welcome) {
 
@@ -65,7 +68,7 @@ fun NavigationWrapper() {
 
         composable<WorkOutHistory> {
             WorkOutScreen(
-                workouts = workoutViewModel.workouts,
+                workouts = workouts,
                 onBack = { navController.popBackStack() }
             )
         }
