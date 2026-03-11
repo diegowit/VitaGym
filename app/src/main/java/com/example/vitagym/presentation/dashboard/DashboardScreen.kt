@@ -21,6 +21,14 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * Main dashboard screen where users can log new workouts.
+ * 
+ * @param viewModel ViewModel handling workout data operations.
+ * @param onLogout Callback triggered when the user logs out.
+ * @param onNavigateToHistory Callback to navigate to the workout history screen.
+ * @param onNavigateToLocation Callback to navigate to the location/map screen.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -36,6 +44,7 @@ fun DashboardScreen(
     var title by remember { mutableStateOf("") }
     var duration by remember { mutableStateOf("") }
     
+    // State for managing the date picker visibility and selection
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = System.currentTimeMillis())
     val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -84,6 +93,7 @@ fun DashboardScreen(
         ) {
             Text(text = "Add New Workout", style = MaterialTheme.typography.headlineSmall)
 
+            // Input for workout title/type
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
@@ -92,6 +102,7 @@ fun DashboardScreen(
                 trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
             )
 
+            // Input for workout duration in minutes
             OutlinedTextField(
                 value = duration,
                 onValueChange = { duration = it },
@@ -101,6 +112,7 @@ fun DashboardScreen(
                 trailingIcon = { Icon(Icons.Default.Timer, contentDescription = null) }
             )
 
+            // Read-only field that opens the Date Picker when clicked
             OutlinedTextField(
                 value = formattedDate,
                 onValueChange = { },
@@ -123,6 +135,7 @@ fun DashboardScreen(
                 }
             )
 
+            // Material 3 Date Picker Dialog
             if (showDatePicker) {
                 DatePickerDialog(
                     onDismissRequest = { showDatePicker = false },
@@ -141,6 +154,7 @@ fun DashboardScreen(
                 }
             }
 
+            // Submit button to save the workout
             Button(
                 onClick = {
                     if (title.isNotBlank() && duration.isNotBlank()) {

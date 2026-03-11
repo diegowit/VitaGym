@@ -23,6 +23,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * Screen that displays a list of past workouts (Workout History).
+ * 
+ * @param workouts List of workouts to display.
+ * @param onBack Callback to navigate back to the previous screen.
+ * @param viewModel ViewModel for handling workout updates and deletions.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkOutScreen(
@@ -30,6 +37,7 @@ fun WorkOutScreen(
     onBack: () -> Unit,
     viewModel: WorkoutViewModel = viewModel()
 ) {
+    // State to track which workout is currently being edited
     var editingWorkout by remember { mutableStateOf<Workout?>(null) }
     val lightGreen = Color(0xFF8BC34A)
 
@@ -63,6 +71,7 @@ fun WorkOutScreen(
                 Text(text = "No workouts added yet.", fontSize = 18.sp, color = Color.Gray)
             }
         } else {
+            // List of workout items
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -80,7 +89,7 @@ fun WorkOutScreen(
             }
         }
 
-        // Edit Dialog
+        // Show edit dialog if a workout is selected for editing
         editingWorkout?.let { workout ->
             EditWorkoutDialog(
                 workout = workout,
@@ -94,6 +103,9 @@ fun WorkOutScreen(
     }
 }
 
+/**
+ * Individual list item representing a single workout entry.
+ */
 @Composable
 fun WorkoutItem(
     workout: Workout,
@@ -136,6 +148,9 @@ fun WorkoutItem(
     }
 }
 
+/**
+ * Dialog for editing an existing workout's details.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditWorkoutDialog(
@@ -146,6 +161,7 @@ fun EditWorkoutDialog(
     var title by remember { mutableStateOf(workout.title) }
     var duration by remember { mutableStateOf(workout.duration.toString()) }
     
+    // State for managing date selection within the edit dialog
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = workout.date)
     val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -169,6 +185,7 @@ fun EditWorkoutDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 
+                // Clicking this field opens the date picker
                 OutlinedTextField(
                     value = formattedDate,
                     onValueChange = { },
