@@ -27,21 +27,35 @@ fun NavigationWrapper() {
         // Login Screen
         composable<Login> {
             LoginScreen(
-                navigateToHome = { navController.navigate(Dashboard) }
+                navigateToHome = { 
+                    navController.navigate(Dashboard) {
+                        popUpTo(Login) { inclusive = true }
+                    }
+                }
             )
         }
 
         // Register Screen
         composable<Register> {
             RegisterScreen(
-                navigateToHome = { navController.navigate(Dashboard) },
+                navigateToHome = { 
+                    navController.navigate(Dashboard) {
+                        popUpTo(Register) { inclusive = true }
+                    }
+                },
                 navigateToLogin = { navController.navigate(Login) }
             )
         }
 
         // Dashboard Screen
         composable<Dashboard> {
-            DashboardScreen()
+            DashboardScreen(
+                onLogout = {
+                    navController.navigate(Welcome) {
+                        popUpTo(Dashboard) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }

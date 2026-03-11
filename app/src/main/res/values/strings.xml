@@ -7,6 +7,8 @@
     <string name="button_addWorkout">Add Workout</string>
     <string name="text_Title">Title</string>
     <string name="text_titleHint">Enter Title</string>
+    <string name="text_Duration">Duration</string>
+    <string name="text_durationHint">Enter Duration (mins)</string>
 
     <string name="donateTitle">Welcome Homer</string>
     <string name="donateSubtitle">Please Give Generously</string>
