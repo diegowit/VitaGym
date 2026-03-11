@@ -42,6 +42,4 @@ VitaGym is a modern Android application designed to help users track their worko
 
 Contributions are welcome! Please feel free to submit a Pull Request or open an issue for any bugs or feature requests.
 
-## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
