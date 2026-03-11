@@ -39,14 +39,14 @@ class WorkoutRepository {
         awaitClose { subscription.remove() }
     }
 
-    suspend fun addWorkout(title: String, duration: Int) {
+    suspend fun addWorkout(title: String, duration: Int, date: Long) {
         val userId = auth.currentUser?.uid ?: return
         val workout = Workout(
             id = workoutsCollection.document().id,
             userId = userId,
             title = title,
             duration = duration,
-            date = System.currentTimeMillis()
+            date = date
         )
 
         try {

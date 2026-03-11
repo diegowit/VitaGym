@@ -1,5 +1,6 @@
 package com.example.vitagym.presentation.dashboard
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -16,6 +17,9 @@ import androidx.compose.ui.unit.sp
 import com.example.vitagym.R
 import com.example.vitagym.presentation.auth.AuthRepository
 import com.example.vitagym.presentation.classes.WorkoutViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +35,11 @@ fun DashboardScreen(
 
     var title by remember { mutableStateOf("") }
     var duration by remember { mutableStateOf("") }
+    
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = System.currentTimeMillis())
+    val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val formattedDate = datePickerState.selectedDateMillis?.let { dateFormatter.format(Date(it)) } ?: ""
 
     Scaffold(
         topBar = {
@@ -92,10 +101,54 @@ fun DashboardScreen(
                 trailingIcon = { Icon(Icons.Default.Timer, contentDescription = null) }
             )
 
+            OutlinedTextField(
+                value = formattedDate,
+                onValueChange = { },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true },
+                label = { Text("Workout Date") },
+                readOnly = true,
+                enabled = false,
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                trailingIcon = {
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(Icons.Default.DateRange, contentDescription = "Select Date")
+                    }
+                }
+            )
+
+            if (showDatePicker) {
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = { showDatePicker = false }) {
+                            Text("OK")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
+
             Button(
                 onClick = {
                     if (title.isNotBlank() && duration.isNotBlank()) {
-                        viewModel.addWorkout(title, duration)
+                        viewModel.addWorkout(
+                            title, 
+                            duration, 
+                            datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                        )
                         title = ""
                         duration = ""
                         onNavigateToHistory() // Navigate to list after adding

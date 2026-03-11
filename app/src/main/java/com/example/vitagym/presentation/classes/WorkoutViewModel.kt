@@ -19,11 +19,11 @@ class WorkoutViewModel : ViewModel() {
             initialValue = emptyList()
         )
 
-    fun addWorkout(title: String, duration: String) {
+    fun addWorkout(title: String, duration: String, date: Long) {
         val durationInt = duration.toIntOrNull() ?: 0
         if (title.isNotBlank() && durationInt > 0) {
             viewModelScope.launch {
-                repository.addWorkout(title, durationInt)
+                repository.addWorkout(title, durationInt, date)
                 Timber.i("Workout add request sent for: $title")
             }
         } else {

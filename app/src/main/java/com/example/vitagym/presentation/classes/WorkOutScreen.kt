@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Timer
@@ -18,6 +19,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vitagym.domain.model.Workout
 import androidx.lifecycle.viewmodel.compose.viewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,8 +117,8 @@ fun WorkoutItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = workout.title, fontSize = 18.sp, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale.getDefault())
-                        .format(java.util.Date(workout.date)),
+                    text = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+                        .format(Date(workout.date)),
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
@@ -132,6 +136,7 @@ fun WorkoutItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditWorkoutDialog(
     workout: Workout,
@@ -140,6 +145,11 @@ fun EditWorkoutDialog(
 ) {
     var title by remember { mutableStateOf(workout.title) }
     var duration by remember { mutableStateOf(workout.duration.toString()) }
+    
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = workout.date)
+    val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val formattedDate = datePickerState.selectedDateMillis?.let { dateFormatter.format(Date(it)) } ?: ""
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -149,19 +159,66 @@ fun EditWorkoutDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") }
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = duration,
                     onValueChange = { duration = it },
-                    label = { Text("Duration (mins)") }
+                    label = { Text("Duration (mins)") },
+                    modifier = Modifier.fillMaxWidth()
                 )
+                
+                OutlinedTextField(
+                    value = formattedDate,
+                    onValueChange = { },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true },
+                    label = { Text("Date") },
+                    readOnly = true,
+                    enabled = false,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    trailingIcon = {
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(Icons.Default.DateRange, contentDescription = "Select Date")
+                        }
+                    }
+                )
+
+                if (showDatePicker) {
+                    DatePickerDialog(
+                        onDismissRequest = { showDatePicker = false },
+                        confirmButton = {
+                            TextButton(onClick = { showDatePicker = false }) {
+                                Text("OK")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDatePicker = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    ) {
+                        DatePicker(state = datePickerState)
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 val durationInt = duration.toIntOrNull() ?: workout.duration
-                onConfirm(workout.copy(title = title, duration = durationInt))
+                val selectedDate = datePickerState.selectedDateMillis ?: workout.date
+                onConfirm(workout.copy(
+                    title = title, 
+                    duration = durationInt,
+                    date = selectedDate
+                ))
             }) {
                 Text("Save")
             }
