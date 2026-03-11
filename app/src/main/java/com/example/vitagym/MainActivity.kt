@@ -23,7 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -38,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.vitagym.navigation.NavigationWrapper
 import com.example.vitagym.ui.theme.VitaGymTheme
 import timber.log.Timber
@@ -46,6 +46,9 @@ import timber.log.Timber.i
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Handle the splash screen transition.
+        val splashScreen = installSplashScreen()
+        
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         Timber.plant(Timber.DebugTree())
@@ -53,8 +56,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             VitaGymTheme {
                 NavigationWrapper()
-
-            }        }    }
+            }        
+        }    
+    }
 }
 
 @Composable
@@ -144,7 +148,3 @@ fun GreetingPreview() {
         Greeting("Android")
     }
 }
-
-
-
-

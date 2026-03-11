@@ -30,4 +30,16 @@ class WorkoutViewModel : ViewModel() {
             Timber.w("Failed to add workout: invalid input")
         }
     }
+
+    fun updateWorkout(workout: Workout) {
+        viewModelScope.launch {
+            repository.updateWorkout(workout)
+        }
+    }
+
+    fun deleteWorkout(workoutId: String) {
+        viewModelScope.launch {
+            repository.deleteWorkout(workoutId)
+        }
+    }
 }

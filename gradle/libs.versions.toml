@@ -12,6 +12,7 @@ timber = "1.5.1"
 materialIconsExtended = "1.7.8"
 firebaseBom = "33.10.0"
 googleServices = "4.4.2"
+coreSplashscreen = "1.0.1"
 
 navigationCompose = "2.8.0"
 kotlinxSerialization = "1.6.3"
@@ -43,6 +44,7 @@ firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "mapsCompose" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

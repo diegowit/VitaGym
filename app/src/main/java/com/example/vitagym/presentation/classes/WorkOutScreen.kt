@@ -1,32 +1,40 @@
 package com.example.vitagym.presentation.classes
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vitagym.domain.model.Workout
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkOutScreen(
     workouts: List<Workout>,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    viewModel: WorkoutViewModel = viewModel()
 ) {
+    var editingWorkout by remember { mutableStateOf<Workout?>(null) }
+    val lightGreen = Color(0xFF8BC34A)
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Workout History", color = Color.White) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = lightGreen
                 ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -38,7 +46,8 @@ fun WorkOutScreen(
                     }
                 }
             )
-        }
+        },
+        containerColor = Color.White
     ) { padding ->
         if (workouts.isEmpty()) {
             Box(
@@ -58,18 +67,41 @@ fun WorkOutScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(workouts) { workout ->
-                    WorkoutItem(workout)
+                    WorkoutItem(
+                        workout = workout,
+                        onEdit = { editingWorkout = workout },
+                        onDelete = { viewModel.deleteWorkout(workout.id) }
+                    )
                 }
             }
+        }
+
+        // Edit Dialog
+        editingWorkout?.let { workout ->
+            EditWorkoutDialog(
+                workout = workout,
+                onDismiss = { editingWorkout = null },
+                onConfirm = { updatedWorkout ->
+                    viewModel.updateWorkout(updatedWorkout)
+                    editingWorkout = null
+                }
+            )
         }
     }
 }
 
 @Composable
-fun WorkoutItem(workout: Workout) {
+fun WorkoutItem(
+    workout: Workout,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEdit() },
+        elevation = CardDefaults.cardElevation(4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
             modifier = Modifier
@@ -78,7 +110,7 @@ fun WorkoutItem(workout: Workout) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(text = workout.title, fontSize = 18.sp, style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale.getDefault())
@@ -88,10 +120,56 @@ fun WorkoutItem(workout: Workout) {
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Timer, contentDescription = null, tint = Color(0xFF8BC34A), modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "${workout.duration} mins", fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                Text(text = "${workout.duration} mins", fontSize = 16.sp, color = Color(0xFF8BC34A))
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.6f))
+                }
             }
         }
     }
+}
+
+@Composable
+fun EditWorkoutDialog(
+    workout: Workout,
+    onDismiss: () -> Unit,
+    onConfirm: (Workout) -> Unit
+) {
+    var title by remember { mutableStateOf(workout.title) }
+    var duration by remember { mutableStateOf(workout.duration.toString()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Workout") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") }
+                )
+                OutlinedTextField(
+                    value = duration,
+                    onValueChange = { duration = it },
+                    label = { Text("Duration (mins)") }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val durationInt = duration.toIntOrNull() ?: workout.duration
+                onConfirm(workout.copy(title = title, duration = durationInt))
+            }) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

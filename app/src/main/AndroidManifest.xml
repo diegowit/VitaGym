@@ -17,16 +17,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VitaGym">
 
-
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_API_KEY" />
+            android:value="AIzaSyBgpcNd4CryYJVVUWhQ7PT_h15XwIPW_QM" />
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.VitaGym">
+            android:theme="@style/Theme.App.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

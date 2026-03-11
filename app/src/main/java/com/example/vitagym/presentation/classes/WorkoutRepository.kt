@@ -56,4 +56,24 @@ class WorkoutRepository {
             Timber.e(e, "Error saving workout to Firestore")
         }
     }
+
+    suspend fun updateWorkout(workout: Workout) {
+        if (workout.id.isEmpty()) return
+        try {
+            workoutsCollection.document(workout.id).set(workout).await()
+            Timber.i("Workout updated in Firestore: ${workout.title}")
+        } catch (e: Exception) {
+            Timber.e(e, "Error updating workout in Firestore")
+        }
+    }
+
+    suspend fun deleteWorkout(workoutId: String) {
+        if (workoutId.isEmpty()) return
+        try {
+            workoutsCollection.document(workoutId).delete().await()
+            Timber.i("Workout deleted from Firestore: $workoutId")
+        } catch (e: Exception) {
+            Timber.e(e, "Error deleting workout from Firestore")
+        }
+    }
 }
