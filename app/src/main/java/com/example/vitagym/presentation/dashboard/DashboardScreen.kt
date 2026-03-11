@@ -22,7 +22,8 @@ import com.example.vitagym.presentation.classes.WorkoutViewModel
 fun DashboardScreen(
     viewModel: WorkoutViewModel,
     onLogout: () -> Unit,
-    onNavigateToHistory: () -> Unit
+    onNavigateToHistory: () -> Unit,
+    onNavigateToLocation: () -> Unit
 ) {
     val authRepository = remember { AuthRepository() }
     val currentUser = authRepository.getCurrentUser()
@@ -47,6 +48,9 @@ fun DashboardScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onNavigateToLocation) {
+                        Icon(imageVector = Icons.Filled.LocationOn, contentDescription = "Location", tint = Color.White)
+                    }
                     IconButton(onClick = onNavigateToHistory) {
                         Icon(imageVector = Icons.Filled.History, contentDescription = "History", tint = Color.White)
                     }

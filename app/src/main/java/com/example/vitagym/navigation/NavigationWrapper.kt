@@ -14,6 +14,7 @@ import com.example.vitagym.presentation.classes.WorkOutScreen
 import com.example.vitagym.presentation.classes.WorkoutViewModel
 import com.example.vitagym.presentation.dashboard.DashboardScreen
 import com.example.vitagym.presentation.dashboard.WelcomeScreen
+import com.example.vitagym.presentation.location.GymLocationScreen
 
 @Composable
 fun NavigationWrapper() {
@@ -62,6 +63,9 @@ fun NavigationWrapper() {
                 },
                 onNavigateToHistory = {
                     navController.navigate(WorkOutHistory)
+                },
+                onNavigateToLocation = {
+                    navController.navigate(GymLocation)
                 }
             )
         }
@@ -69,6 +73,12 @@ fun NavigationWrapper() {
         composable<WorkOutHistory> {
             WorkOutScreen(
                 workouts = workouts,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<GymLocation> {
+            GymLocationScreen(
                 onBack = { navController.popBackStack() }
             )
         }

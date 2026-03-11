@@ -16,3 +16,6 @@ object Dashboard
 
 @Serializable
 object WorkOutHistory
+
+@Serializable
+object GymLocation
