@@ -25,7 +25,7 @@ VitaGym is a modern Android application designed to help users track their worko
 ### Prerequisites
 
 - Android Studio Iguana or newer.
-- A Firebase project set up in the [Firebase Console](https://console.firebase.google.com/).
+- A Firebase project set up in the Firebase Console.
 - `google-services.json` file placed in the `app/` directory.
 
 ### Installation
@@ -33,13 +33,3 @@ VitaGym is a modern Android application designed to help users track their worko
 1. Clone the repository:
    ```bash
    git clone https://github.com/yourusername/vitagym.git
-   ```
-2. Open the project in Android Studio.
-3. Sync the project with Gradle files.
-4. Run the app on an emulator or a physical device.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request or open an issue for any bugs or feature requests.
-
-
