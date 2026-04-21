@@ -9,8 +9,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vitagym.data.ml.ExerciseFormAnalyzer
@@ -32,7 +34,6 @@ import com.google.mlkit.vision.pose.PoseLandmark
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AITrainerScreen(onBack: () -> Unit) {
     val context = LocalContext.current
@@ -51,31 +52,27 @@ fun AITrainerScreen(onBack: () -> Unit) {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("AI Form Trainer", color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                }
-            )
-        }
-    ) { padding ->
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (hasCameraPermission) {
-            PoseDetectionCameraView(modifier = Modifier.padding(padding))
+            PoseDetectionCameraView(onBack = onBack)
         } else {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Camera permission is required to use this feature.")
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalAlignment = Arrangement.Center
+            ) {
+                Text("Camera permission required", color = Color.White)
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = { launcher.launch(Manifest.permission.CAMERA) }) {
+                    Text("Grant Permission")
+                }
             }
         }
     }
 }
 
 @Composable
-fun PoseDetectionCameraView(modifier: Modifier = Modifier) {
+fun PoseDetectionCameraView(onBack: () -> Unit) {
     val executor = remember { Executors.newSingleThreadExecutor() }
     val scope = rememberCoroutineScope()
     
@@ -106,69 +103,101 @@ fun PoseDetectionCameraView(modifier: Modifier = Modifier) {
             }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .selectableGroup()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Full screen Camera Preview
+        CameraPreview(
+            modifier = Modifier.fillMaxSize(),
+            useCases = listOf(imageAnalysis)
+        )
+
+        // Pose skeleton overlay
+        detectedPose?.let { pose ->
+            PoseOverlay(pose = pose)
+        }
+
+        // Floating Back Button
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(16.dp)
+                .background(Color.Black.copy(alpha = 0.5f), shape = RoundedCornerShape(12.dp))
         ) {
-            ExerciseRadioButton("Squat", exerciseType == ExerciseType.Squat) { 
-                exerciseType = ExerciseType.Squat 
-                formAnalyzer.resetCounter()
-            }
-            ExerciseRadioButton("Push-up", exerciseType == ExerciseType.PushUp) { 
-                exerciseType = ExerciseType.PushUp 
-                formAnalyzer.resetCounter()
-            }
-            ExerciseRadioButton("Plank", exerciseType == ExerciseType.Plank) { 
-                exerciseType = ExerciseType.Plank 
-                formAnalyzer.resetCounter()
+            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+        }
+
+        // Exercise Selection (Top center, below back button)
+        Card(
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(top = 70.dp)
+                .align(Alignment.TopCenter),
+            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.6f)),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Row(
+                Modifier
+                    .selectableGroup()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ExerciseChip("Squat", exerciseType == ExerciseType.Squat) { 
+                    exerciseType = ExerciseType.Squat 
+                    formAnalyzer.resetCounter()
+                }
+                ExerciseChip("Push-up", exerciseType == ExerciseType.PushUp) { 
+                    exerciseType = ExerciseType.PushUp 
+                    formAnalyzer.resetCounter()
+                }
+                ExerciseChip("Plank", exerciseType == ExerciseType.Plank) { 
+                    exerciseType = ExerciseType.Plank 
+                    formAnalyzer.resetCounter()
+                }
             }
         }
 
-        Box(modifier = Modifier.weight(1f)) {
-            CameraPreview(
-                modifier = Modifier.fillMaxSize(),
-                useCases = listOf(imageAnalysis)
-            )
-
+        // Feedback Card (Bottom Center)
+        val feedback = remember(detectedPose, exerciseType) {
             detectedPose?.let { pose ->
-                PoseOverlay(pose = pose)
+                val analysis = pose.toPoseAnalysis()
+                when (exerciseType) {
+                    ExerciseType.Squat -> formAnalyzer.analyzeSquat(analysis)
+                    ExerciseType.PushUp -> formAnalyzer.analyzePushUp(analysis)
+                    ExerciseType.Plank -> formAnalyzer.analyzePlank(analysis)
+                    else -> null
+                }
             }
-            
-            Box(
+        }
+
+        if (feedback != null) {
+            Card(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(24.dp)
-                    .background(Color.Black.copy(alpha = 0.6f), shape = MaterialTheme.shapes.medium)
-                    .padding(16.dp)
+                    .padding(bottom = 32.dp)
+                    .fillMaxWidth(0.85f),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (feedback.isCorrect) Color(0xFF00E676) else Color(0xFFFF5252)
+                ),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(8.dp)
             ) {
-                val feedback = remember(detectedPose, exerciseType) {
-                    detectedPose?.let { pose ->
-                        val analysis = pose.toPoseAnalysis()
-                        when (exerciseType) {
-                            ExerciseType.Squat -> formAnalyzer.analyzeSquat(analysis)
-                            ExerciseType.PushUp -> formAnalyzer.analyzePushUp(analysis)
-                            ExerciseType.Plank -> formAnalyzer.analyzePlank(analysis)
-                            else -> null
-                        }
-                    }
-                }
-                
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
-                        text = feedback?.feedback ?: "Scanning for pose...",
-                        color = if (feedback?.isCorrect == false) Color.Red else Color.White,
-                        fontSize = 18.sp
+                        text = feedback.feedback,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
-                    if (feedback != null && exerciseType != ExerciseType.Plank) {
+                    if (exerciseType != ExerciseType.Plank) {
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Reps: ${feedback.repCount}",
-                            color = Color.Cyan,
-                            fontSize = 24.sp,
-                            style = MaterialTheme.typography.headlineMedium
+                            fontSize = 36.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
                         )
                     }
                 }
@@ -185,31 +214,29 @@ fun PoseDetectionCameraView(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ExerciseRadioButton(text: String, selected: Boolean, onClick: () -> Unit) {
-    Row(
-        Modifier
-            .selectable(
-                selected = selected,
-                onClick = onClick,
-                role = Role.RadioButton
-            )
-            .padding(horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+fun ExerciseChip(text: String, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        selected = selected,
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+        contentColor = if (selected) Color.White else Color.White.copy(alpha = 0.7f),
+        modifier = Modifier.height(32.dp)
     ) {
-        RadioButton(selected = selected, onClick = null)
-        Text(text = text, modifier = Modifier.padding(start = 4.dp), fontSize = 12.sp)
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 12.dp)) {
+            Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        }
     }
 }
 
 @Composable
 fun PoseOverlay(pose: Pose) {
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val landmarks = pose.allPoseLandmarks
         drawPoseConnections(this, pose)
-        for (landmark in landmarks) {
+        for (landmark in pose.allPoseLandmarks) {
             drawCircle(
                 color = Color.Cyan,
-                radius = 8f,
+                radius = 6f,
                 center = androidx.compose.ui.geometry.Offset(landmark.position.x, landmark.position.y)
             )
         }
@@ -218,7 +245,7 @@ fun PoseOverlay(pose: Pose) {
 
 private fun drawPoseConnections(drawScope: androidx.compose.ui.graphics.drawscope.DrawScope, pose: Pose) {
     val color = Color.Green
-    val strokeWidth = 5f
+    val strokeWidth = 4f
 
     fun drawLine(from: Int, to: Int) {
         val start = pose.getPoseLandmark(from)
@@ -233,16 +260,15 @@ private fun drawPoseConnections(drawScope: androidx.compose.ui.graphics.drawscop
         }
     }
 
+    // Connect joints
     drawLine(PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW)
     drawLine(PoseLandmark.LEFT_ELBOW, PoseLandmark.LEFT_WRIST)
     drawLine(PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW)
     drawLine(PoseLandmark.RIGHT_ELBOW, PoseLandmark.RIGHT_WRIST)
-
     drawLine(PoseLandmark.LEFT_SHOULDER, PoseLandmark.RIGHT_SHOULDER)
     drawLine(PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_HIP)
     drawLine(PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_HIP)
     drawLine(PoseLandmark.LEFT_HIP, PoseLandmark.RIGHT_HIP)
-
     drawLine(PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_KNEE)
     drawLine(PoseLandmark.LEFT_KNEE, PoseLandmark.LEFT_ANKLE)
     drawLine(PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE)
