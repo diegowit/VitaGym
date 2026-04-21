@@ -4,9 +4,12 @@ import com.example.vitagym.domain.model.Workout
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 
@@ -19,48 +22,63 @@ class WorkoutRepository {
     private val workoutsCollection = firestore.collection("workouts")
 
     /**
-     * Streams the list of workouts for the current user from Firestore.
-     * Uses [callbackFlow] to listen for real-time updates.
+     * Emits the current Firebase user whenever the auth state changes.
      */
-    fun getWorkouts(): Flow<List<Workout>> = callbackFlow {
-        val userId = auth.currentUser?.uid
-        if (userId.isNullOrEmpty()) {
-            trySend(emptyList())
-            close() // Close the flow if no user is logged in
-            return@callbackFlow
+    private fun authStateFlow(): Flow<String?> = callbackFlow {
+        val listener = FirebaseAuth.AuthStateListener { auth ->
+            trySend(auth.currentUser?.uid)
+        }
+        auth.addAuthStateListener(listener)
+        awaitClose { auth.removeAuthStateListener(listener) }
+    }
+
+    /**
+     * Streams the list of workouts for the current user.
+     * Reacts to login/logout events automatically.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getWorkouts(): Flow<List<Workout>> = authStateFlow().flatMapLatest { userId ->
+        if (userId == null) {
+            Timber.w("getWorkouts: No user logged in.")
+            return@flatMapLatest flowOf(emptyList())
         }
 
-        // Setting up a snapshot listener for real-time updates from Firestore
-        val subscription = workoutsCollection
-            .whereEqualTo("userId", userId)
-            .orderBy("date", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
+        callbackFlow {
+            val query = workoutsCollection
+                .whereEqualTo("userId", userId)
+                .orderBy("date", Query.Direction.DESCENDING)
+
+            val subscription = query.addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Timber.e(error, "Error fetching workouts")
-                    // Note: We don't close the flow on error to allow for retry/recovery
+                    Timber.e(error, "Firestore: Error fetching workouts for user $userId")
                     return@addSnapshotListener
                 }
+
                 if (snapshot != null) {
-                    val workouts = snapshot.toObjects(Workout::class.java)
+                    val workouts = snapshot.documents.mapNotNull { doc ->
+                        doc.toObject(Workout::class.java)?.copy(id = doc.id)
+                    }
+                    Timber.d("Firestore: Synced ${workouts.size} workouts for user $userId")
                     trySend(workouts)
                 }
             }
 
-        // Crucial: This block is executed when the flow is cancelled or closed.
-        // It ensures the Firestore listener is removed to prevent memory leaks.
-        awaitClose {
-            subscription.remove()
-            Timber.d("Firestore workout subscription removed")
+            awaitClose {
+                subscription.remove()
+                Timber.d("Firestore workout subscription removed for user $userId")
+            }
         }
     }
 
-    /**
-     * Adds a new workout to the current user's collection in Firestore.
-     */
     suspend fun addWorkout(title: String, duration: Int, date: Long) {
-        val userId = auth.currentUser?.uid ?: return
+        val userId = auth.currentUser?.uid ?: run {
+            Timber.e("Firestore: Cannot add workout - no user logged in")
+            return
+        }
+        
+        val docRef = workoutsCollection.document()
         val workout = Workout(
-            id = workoutsCollection.document().id,
+            id = docRef.id, 
             userId = userId,
             title = title,
             duration = duration,
@@ -68,36 +86,45 @@ class WorkoutRepository {
         )
 
         try {
-            workoutsCollection.document(workout.id).set(workout).await()
-            Timber.i("Workout saved to Firestore: ${workout.title}")
+            docRef.set(workout).await()
+            Timber.i("Firestore: Workout saved: ${workout.title} for user $userId")
         } catch (e: Exception) {
-            Timber.e(e, "Error saving workout to Firestore")
+            Timber.e(e, "Firestore: Error saving workout")
         }
     }
 
-    /**
-     * Updates an existing workout's details in Firestore.
-     */
     suspend fun updateWorkout(workout: Workout) {
-        if (workout.id.isEmpty()) return
+        if (workout.id.isBlank()) {
+            Timber.e("Firestore: Cannot update workout - missing ID")
+            return
+        }
+
+        val userId = auth.currentUser?.uid ?: run {
+            Timber.e("Firestore: Cannot update workout - no user logged in")
+            return
+        }
+
+        // Ensure the workout being updated still belongs to the current user
+        val workoutToSave = workout.copy(userId = userId)
+
         try {
-            workoutsCollection.document(workout.id).set(workout).await()
-            Timber.i("Workout updated in Firestore: ${workout.title}")
+            workoutsCollection.document(workout.id).set(workoutToSave).await()
+            Timber.i("Firestore: Workout updated: ${workout.title} (ID: ${workout.id})")
         } catch (e: Exception) {
-            Timber.e(e, "Error updating workout in Firestore")
+            Timber.e(e, "Firestore: Error updating workout ${workout.id}")
         }
     }
 
-    /**
-     * Deletes a specific workout from Firestore by its ID.
-     */
     suspend fun deleteWorkout(workoutId: String) {
-        if (workoutId.isEmpty()) return
+        if (workoutId.isBlank()) {
+            Timber.e("Firestore: Cannot delete workout - missing ID")
+            return
+        }
         try {
             workoutsCollection.document(workoutId).delete().await()
-            Timber.i("Workout deleted from Firestore: $workoutId")
+            Timber.i("Firestore: Workout deleted: $workoutId")
         } catch (e: Exception) {
-            Timber.e(e, "Error deleting workout from Firestore")
+            Timber.e(e, "Firestore: Error deleting workout $workoutId")
         }
     }
 }

@@ -9,16 +9,26 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+/**
+ * ViewModel for managing workout data and UI state.
+ */
 class WorkoutViewModel : ViewModel() {
     private val repository = WorkoutRepository()
 
+    /**
+     * StateFlow representing the list of workouts.
+     * It automatically updates whenever the repository's data changes.
+     */
     val workouts: StateFlow<List<Workout>> = repository.getWorkouts()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Eagerly, // Change to Eagerly to ensure data is loaded immediately
             initialValue = emptyList()
         )
 
+    /**
+     * Adds a new workout entry.
+     */
     fun addWorkout(title: String, duration: String, date: Long) {
         val durationInt = duration.toIntOrNull() ?: 0
         if (title.isNotBlank() && durationInt > 0) {
@@ -31,12 +41,18 @@ class WorkoutViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Updates an existing workout entry.
+     */
     fun updateWorkout(workout: Workout) {
         viewModelScope.launch {
             repository.updateWorkout(workout)
         }
     }
 
+    /**
+     * Deletes a workout entry by its ID.
+     */
     fun deleteWorkout(workoutId: String) {
         viewModelScope.launch {
             repository.deleteWorkout(workoutId)

@@ -58,12 +58,26 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
-    implementation("com.google.android.gms:play-services-auth:20.4.1")
+    implementation(libs.play.services.auth)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.0")
     implementation("io.coil-kt:coil-compose:2.2.2")
 
     implementation(libs.timber)
+
+    // ML Kit Pose Detection
+    implementation("com.google.mlkit:pose-detection:18.0.0-beta3")
+    implementation("com.google.mlkit:pose-detection-accurate:18.0.0-beta3")
+
+    // CameraX for camera functionality
+    val camerax_version = "1.3.1"
+    implementation("androidx.camera:camera-core:${camerax_version}")
+    implementation("androidx.camera:camera-camera2:${camerax_version}")
+    implementation("androidx.camera:camera-lifecycle:${camerax_version}")
+    implementation("androidx.camera:camera-view:${camerax_version}")
+
+    // For drawing on canvas
+    implementation("androidx.compose.ui:ui-graphics")
     
     // Maps
     implementation(libs.maps.compose)

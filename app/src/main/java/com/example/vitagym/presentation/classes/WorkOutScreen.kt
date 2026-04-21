@@ -18,26 +18,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vitagym.domain.model.Workout
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
  * Screen that displays a list of past workouts (Workout History).
- * 
- * @param workouts List of workouts to display.
- * @param onBack Callback to navigate back to the previous screen.
- * @param viewModel ViewModel for handling workout updates and deletions.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkOutScreen(
-    workouts: List<Workout>,
     onBack: () -> Unit,
-    viewModel: WorkoutViewModel = viewModel()
+    viewModel: WorkoutViewModel
 ) {
-    // State to track which workout is currently being edited
+    // Observe the workouts from the shared ViewModel
+    val workouts by viewModel.workouts.collectAsStateWithLifecycle()
+    
     var editingWorkout by remember { mutableStateOf<Workout?>(null) }
     val lightGreen = Color(0xFF8BC34A)
 
@@ -45,16 +42,10 @@ fun WorkOutScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Workout History", color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = lightGreen
-                ),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = lightGreen),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 }
             )
@@ -63,23 +54,18 @@ fun WorkOutScreen(
     ) { padding ->
         if (workouts.isEmpty()) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = "No workouts added yet.", fontSize = 18.sp, color = Color.Gray)
             }
         } else {
-            // List of workout items
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(workouts) { workout ->
+                // Using 'id' as a key ensures Compose correctly handles deletions/updates
+                items(workouts, key = { it.id }) { workout ->
                     WorkoutItem(
                         workout = workout,
                         onEdit = { editingWorkout = workout },
@@ -89,7 +75,6 @@ fun WorkOutScreen(
             }
         }
 
-        // Show edit dialog if a workout is selected for editing
         editingWorkout?.let { workout ->
             EditWorkoutDialog(
                 workout = workout,
@@ -103,36 +88,23 @@ fun WorkOutScreen(
     }
 }
 
-/**
- * Individual list item representing a single workout entry.
- */
 @Composable
-fun WorkoutItem(
-    workout: Workout,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
-) {
+fun WorkoutItem(workout: Workout, onEdit: () -> Unit, onDelete: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onEdit() },
+        modifier = Modifier.fillMaxWidth().clickable { onEdit() },
         elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = workout.title, fontSize = 18.sp, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-                        .format(Date(workout.date)),
-                    fontSize = 12.sp,
-                    color = Color.Gray
+                    text = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(workout.date)),
+                    fontSize = 12.sp, color = Color.Gray
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -148,20 +120,11 @@ fun WorkoutItem(
     }
 }
 
-/**
- * Dialog for editing an existing workout's details.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditWorkoutDialog(
-    workout: Workout,
-    onDismiss: () -> Unit,
-    onConfirm: (Workout) -> Unit
-) {
+fun EditWorkoutDialog(workout: Workout, onDismiss: () -> Unit, onConfirm: (Workout) -> Unit) {
     var title by remember { mutableStateOf(workout.title) }
     var duration by remember { mutableStateOf(workout.duration.toString()) }
-    
-    // State for managing date selection within the edit dialog
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = workout.date)
     val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -172,78 +135,32 @@ fun EditWorkoutDialog(
         title = { Text("Edit Workout") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = duration, onValueChange = { duration = it }, label = { Text("Duration (mins)") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Title") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = duration,
-                    onValueChange = { duration = it },
-                    label = { Text("Duration (mins)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                // Clicking this field opens the date picker
-                OutlinedTextField(
-                    value = formattedDate,
-                    onValueChange = { },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showDatePicker = true },
-                    label = { Text("Date") },
-                    readOnly = true,
-                    enabled = false,
+                    value = formattedDate, onValueChange = { },
+                    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true },
+                    label = { Text("Date") }, readOnly = true, enabled = false,
                     colors = OutlinedTextFieldDefaults.colors(
                         disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        disabledBorderColor = MaterialTheme.colorScheme.outline
                     ),
-                    trailingIcon = {
-                        IconButton(onClick = { showDatePicker = true }) {
-                            Icon(Icons.Default.DateRange, contentDescription = "Select Date")
-                        }
-                    }
+                    trailingIcon = { IconButton(onClick = { showDatePicker = true }) { Icon(Icons.Default.DateRange, contentDescription = null) } }
                 )
-
                 if (showDatePicker) {
                     DatePickerDialog(
                         onDismissRequest = { showDatePicker = false },
-                        confirmButton = {
-                            TextButton(onClick = { showDatePicker = false }) {
-                                Text("OK")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showDatePicker = false }) {
-                                Text("Cancel")
-                            }
-                        }
-                    ) {
-                        DatePicker(state = datePickerState)
-                    }
+                        confirmButton = { TextButton(onClick = { showDatePicker = false }) { Text("OK") } }
+                    ) { DatePicker(state = datePickerState) }
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 val durationInt = duration.toIntOrNull() ?: workout.duration
-                val selectedDate = datePickerState.selectedDateMillis ?: workout.date
-                onConfirm(workout.copy(
-                    title = title, 
-                    duration = durationInt,
-                    date = selectedDate
-                ))
-            }) {
-                Text("Save")
-            }
+                onConfirm(workout.copy(title = title, duration = durationInt, date = datePickerState.selectedDateMillis ?: workout.date))
+            }) { Text("Save") }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
