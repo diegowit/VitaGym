@@ -4,8 +4,6 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -19,16 +17,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import com.example.vitagym.data.ml.ExerciseFormAnalyzer
 import com.example.vitagym.data.ml.ExerciseType
 import com.example.vitagym.data.ml.PoseDetectorManager
 import com.example.vitagym.data.ml.toPoseAnalysis
+import com.example.vitagym.presentation.aitrainer.camera.CameraPreview
 import com.example.vitagym.util.CameraPermissionHelper
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.pose.Pose
@@ -80,8 +76,6 @@ fun AITrainerScreen(onBack: () -> Unit) {
 
 @Composable
 fun PoseDetectionCameraView(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val executor = remember { Executors.newSingleThreadExecutor() }
     val scope = rememberCoroutineScope()
     
@@ -91,8 +85,28 @@ fun PoseDetectionCameraView(modifier: Modifier = Modifier) {
     val poseDetectorManager = remember { PoseDetectorManager() }
     val formAnalyzer = remember { ExerciseFormAnalyzer() }
 
+    val imageAnalysis = remember {
+        ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+            .also {
+                it.setAnalyzer(executor) { imageProxy ->
+                    scope.launch {
+                        val mediaImage = imageProxy.image
+                        if (mediaImage != null) {
+                            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                            val pose = poseDetectorManager.detectPose(image)
+                            if (pose != null) {
+                                detectedPose = pose
+                            }
+                        }
+                        imageProxy.close()
+                    }
+                }
+            }
+    }
+
     Column(modifier = modifier.fillMaxSize()) {
-        // Exercise Selection
         Row(
             Modifier
                 .fillMaxWidth()
@@ -115,62 +129,15 @@ fun PoseDetectionCameraView(modifier: Modifier = Modifier) {
         }
 
         Box(modifier = Modifier.weight(1f)) {
-            AndroidView(
-                factory = { ctx ->
-                    val previewView = PreviewView(ctx)
-                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-
-                    cameraProviderFuture.addListener({
-                        val cameraProvider = cameraProviderFuture.get()
-                        
-                        val preview = Preview.Builder().build().also {
-                            it.setSurfaceProvider(previewView.surfaceProvider)
-                        }
-
-                        val imageAnalysis = ImageAnalysis.Builder()
-                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                            .build()
-                            .also {
-                                it.setAnalyzer(executor) { imageProxy ->
-                                    scope.launch {
-                                        val mediaImage = imageProxy.image
-                                        if (mediaImage != null) {
-                                            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-                                            val pose = poseDetectorManager.detectPose(image)
-                                            if (pose != null) {
-                                                detectedPose = pose
-                                            }
-                                        }
-                                        imageProxy.close()
-                                    }
-                                }
-                            }
-
-                        val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
-
-                        try {
-                            cameraProvider.unbindAll()
-                            cameraProvider.bindToLifecycle(
-                                lifecycleOwner,
-                                cameraSelector,
-                                preview,
-                                imageAnalysis
-                            )
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }, ContextCompat.getMainExecutor(ctx))
-                    previewView
-                },
-                modifier = Modifier.fillMaxSize()
+            CameraPreview(
+                modifier = Modifier.fillMaxSize(),
+                useCases = listOf(imageAnalysis)
             )
 
-            // Overlay for landmarks
             detectedPose?.let { pose ->
                 PoseOverlay(pose = pose)
             }
             
-            // Feedback Box
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -238,11 +205,7 @@ fun ExerciseRadioButton(text: String, selected: Boolean, onClick: () -> Unit) {
 fun PoseOverlay(pose: Pose) {
     Canvas(modifier = Modifier.fillMaxSize()) {
         val landmarks = pose.allPoseLandmarks
-        
-        // Draw connections
         drawPoseConnections(this, pose)
-
-        // Draw points
         for (landmark in landmarks) {
             drawCircle(
                 color = Color.Cyan,
@@ -270,19 +233,16 @@ private fun drawPoseConnections(drawScope: androidx.compose.ui.graphics.drawscop
         }
     }
 
-    // Arms
     drawLine(PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW)
     drawLine(PoseLandmark.LEFT_ELBOW, PoseLandmark.LEFT_WRIST)
     drawLine(PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW)
     drawLine(PoseLandmark.RIGHT_ELBOW, PoseLandmark.RIGHT_WRIST)
 
-    // Torso
     drawLine(PoseLandmark.LEFT_SHOULDER, PoseLandmark.RIGHT_SHOULDER)
     drawLine(PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_HIP)
     drawLine(PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_HIP)
     drawLine(PoseLandmark.LEFT_HIP, PoseLandmark.RIGHT_HIP)
 
-    // Legs
     drawLine(PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_KNEE)
     drawLine(PoseLandmark.LEFT_KNEE, PoseLandmark.LEFT_ANKLE)
     drawLine(PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE)
