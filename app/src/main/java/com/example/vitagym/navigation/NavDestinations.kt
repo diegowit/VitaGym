@@ -19,3 +19,6 @@ object WorkOutHistory
 
 @Serializable
 object GymLocation
+
+@Serializable
+object AITrainer
