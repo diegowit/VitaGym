@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
@@ -59,7 +60,7 @@ fun AITrainerScreen(onBack: () -> Unit) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalAlignment = Arrangement.Center
+                verticalArrangement = Arrangement.Center
             ) {
                 Text("Camera permission required", color = Color.White)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -77,6 +78,9 @@ fun PoseDetectionCameraView(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     
     var detectedPose by remember { mutableStateOf<Pose?>(null) }
+    var imageWidth by remember { mutableIntStateOf(480) }
+    var imageHeight by remember { mutableIntStateOf(640) }
+    
     var exerciseType by remember { mutableStateOf<ExerciseType>(ExerciseType.Squat) }
     
     val poseDetectorManager = remember { PoseDetectorManager() }
@@ -88,10 +92,21 @@ fun PoseDetectionCameraView(onBack: () -> Unit) {
             .build()
             .also {
                 it.setAnalyzer(executor) { imageProxy ->
+                    val rotation = imageProxy.imageInfo.rotationDegrees
+                    val isRotated = rotation == 90 || rotation == 270
+                    
+                    val currentWidth = if (isRotated) imageProxy.height else imageProxy.width
+                    val currentHeight = if (isRotated) imageProxy.width else imageProxy.height
+                    
+                    if (imageWidth != currentWidth || imageHeight != currentHeight) {
+                        imageWidth = currentWidth
+                        imageHeight = currentHeight
+                    }
+
                     scope.launch {
                         val mediaImage = imageProxy.image
                         if (mediaImage != null) {
-                            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                            val image = InputImage.fromMediaImage(mediaImage, rotation)
                             val pose = poseDetectorManager.detectPose(image)
                             if (pose != null) {
                                 detectedPose = pose
@@ -112,7 +127,11 @@ fun PoseDetectionCameraView(onBack: () -> Unit) {
 
         // Pose skeleton overlay
         detectedPose?.let { pose ->
-            PoseOverlay(pose = pose)
+            PoseOverlay(
+                pose = pose,
+                imageWidth = imageWidth,
+                imageHeight = imageHeight
+            )
         }
 
         // Floating Back Button
@@ -230,22 +249,39 @@ fun ExerciseChip(text: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun PoseOverlay(pose: Pose) {
+fun PoseOverlay(pose: Pose, imageWidth: Int, imageHeight: Int) {
     Canvas(modifier = Modifier.fillMaxSize()) {
-        drawPoseConnections(this, pose)
+        val canvasWidth = size.width
+        val canvasHeight = size.height
+        
+        val scaleX = canvasWidth / imageWidth
+        val scaleY = canvasHeight / imageHeight
+        
+        // Front camera is mirrored, so we need to flip the X coordinate
+        fun transform(x: Float, y: Float): Offset {
+            return Offset(canvasWidth - (x * scaleX), y * scaleY)
+        }
+
+        drawPoseConnections(this, pose, ::transform)
+        
         for (landmark in pose.allPoseLandmarks) {
+            val offset = transform(landmark.position.x, landmark.position.y)
             drawCircle(
                 color = Color.Cyan,
-                radius = 6f,
-                center = androidx.compose.ui.geometry.Offset(landmark.position.x, landmark.position.y)
+                radius = 10f, // Increased radius
+                center = offset
             )
         }
     }
 }
 
-private fun drawPoseConnections(drawScope: androidx.compose.ui.graphics.drawscope.DrawScope, pose: Pose) {
+private fun drawPoseConnections(
+    drawScope: androidx.compose.ui.graphics.drawscope.DrawScope, 
+    pose: Pose,
+    transform: (Float, Float) -> Offset
+) {
     val color = Color.Green
-    val strokeWidth = 4f
+    val strokeWidth = 8f // Increased stroke width
 
     fun drawLine(from: Int, to: Int) {
         val start = pose.getPoseLandmark(from)
@@ -253,8 +289,8 @@ private fun drawPoseConnections(drawScope: androidx.compose.ui.graphics.drawscop
         if (start != null && end != null) {
             drawScope.drawLine(
                 color = color,
-                start = androidx.compose.ui.geometry.Offset(start.position.x, start.position.y),
-                end = androidx.compose.ui.geometry.Offset(end.position.x, end.position.y),
+                start = transform(start.position.x, start.position.y),
+                end = transform(end.position.x, end.position.y),
                 strokeWidth = strokeWidth
             )
         }
