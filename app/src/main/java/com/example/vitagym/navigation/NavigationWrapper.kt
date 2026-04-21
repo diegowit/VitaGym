@@ -5,6 +5,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.vitagym.presentation.aitrainer.AITrainerScreen
 import com.example.vitagym.presentation.auth.login.LoginScreen
 import com.example.vitagym.presentation.auth.register.RegisterScreen
 import com.example.vitagym.presentation.classes.WorkOutScreen
@@ -62,6 +63,9 @@ fun NavigationWrapper() {
                 },
                 onNavigateToLocation = {
                     navController.navigate(GymLocation)
+                },
+                onNavigateToAITrainer = {
+                    navController.navigate(AITrainer)
                 }
             )
         }
@@ -75,6 +79,12 @@ fun NavigationWrapper() {
 
         composable<GymLocation> {
             GymLocationScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<AITrainer> {
+            AITrainerScreen(
                 onBack = { navController.popBackStack() }
             )
         }

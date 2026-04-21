@@ -29,6 +29,7 @@ import java.util.Locale
  * @param onLogout Callback triggered when the user logs out.
  * @param onNavigateToHistory Callback to navigate to the workout history screen.
  * @param onNavigateToLocation Callback to navigate to the location/map screen.
+ * @param onNavigateToAITrainer Callback to navigate to the AI trainer screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +37,8 @@ fun DashboardScreen(
     viewModel: WorkoutViewModel,
     onLogout: () -> Unit,
     onNavigateToHistory: () -> Unit,
-    onNavigateToLocation: () -> Unit
+    onNavigateToLocation: () -> Unit,
+    onNavigateToAITrainer: () -> Unit
 ) {
     val authRepository = remember { AuthRepository() }
     val currentUser = authRepository.getCurrentUser()
@@ -67,6 +69,9 @@ fun DashboardScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onNavigateToAITrainer) {
+                        Icon(imageVector = Icons.Filled.FitnessCenter, contentDescription = "AI Trainer", tint = Color.White)
+                    }
                     IconButton(onClick = onNavigateToLocation) {
                         Icon(imageVector = Icons.Filled.LocationOn, contentDescription = "Location", tint = Color.White)
                     }

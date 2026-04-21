@@ -22,13 +22,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.example.vitagym.data.ml.PoseDetectorManager
+import com.example.vitagym.util.AngleCalculator
 import com.example.vitagym.util.CameraPermissionHelper
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.pose.Pose
-import com.google.mlkit.vision.pose.PoseDetection
-import com.google.mlkit.vision.pose.PoseDetector
 import com.google.mlkit.vision.pose.PoseLandmark
-import com.google.mlkit.vision.pose.accurate.AccuratePoseDetectorOptions
+import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,15 +78,10 @@ fun PoseDetectionCameraView(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val executor = remember { Executors.newSingleThreadExecutor() }
+    val scope = rememberCoroutineScope()
     
     var detectedPose by remember { mutableStateOf<Pose?>(null) }
-
-    val poseDetector = remember {
-        val options = AccuratePoseDetectorOptions.Builder()
-            .setDetectorMode(AccuratePoseDetectorOptions.STREAM_MODE)
-            .build()
-        PoseDetection.getClient(options)
-    }
+    val poseDetectorManager = remember { PoseDetectorManager() }
 
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
@@ -106,8 +101,16 @@ fun PoseDetectionCameraView(modifier: Modifier = Modifier) {
                         .build()
                         .also {
                             it.setAnalyzer(executor) { imageProxy ->
-                                processImageProxy(poseDetector, imageProxy) { pose ->
-                                    detectedPose = pose
+                                scope.launch {
+                                    val mediaImage = imageProxy.image
+                                    if (mediaImage != null) {
+                                        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                                        val pose = poseDetectorManager.detectPose(image)
+                                        if (pose != null) {
+                                            detectedPose = pose
+                                        }
+                                    }
+                                    imageProxy.close()
                                 }
                             }
                         }
@@ -152,32 +155,8 @@ fun PoseDetectionCameraView(modifier: Modifier = Modifier) {
     DisposableEffect(Unit) {
         onDispose {
             executor.shutdown()
-            poseDetector.close()
+            poseDetectorManager.close()
         }
-    }
-}
-
-@androidx.annotation.OptIn(ExperimentalGetImage::class)
-private fun processImageProxy(
-    poseDetector: PoseDetector,
-    imageProxy: ImageProxy,
-    onPoseDetected: (Pose) -> Unit
-) {
-    val mediaImage = imageProxy.image
-    if (mediaImage != null) {
-        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        poseDetector.process(image)
-            .addOnSuccessListener { pose ->
-                onPoseDetected(pose)
-            }
-            .addOnFailureListener {
-                it.printStackTrace()
-            }
-            .addOnCompleteListener {
-                imageProxy.close()
-            }
-    } else {
-        imageProxy.close()
     }
 }
 
@@ -244,7 +223,7 @@ fun getPoseFeedback(pose: Pose?): String {
     val leftAnkle = pose.getPoseLandmark(PoseLandmark.LEFT_ANKLE)
 
     if (leftHip != null && leftKnee != null && leftAnkle != null) {
-        val angle = calculateAngle(leftHip, leftKnee, leftAnkle)
+        val angle = AngleCalculator.getAngle(leftHip.position, leftKnee.position, leftAnkle.position)
         return when {
             angle > 160 -> "Stand straight"
             angle in 90.0..120.0 -> "Good depth!"
@@ -254,16 +233,4 @@ fun getPoseFeedback(pose: Pose?): String {
     }
     
     return "Ensure full body is visible"
-}
-
-fun calculateAngle(first: PoseLandmark, second: PoseLandmark, third: PoseLandmark): Double {
-    var result = Math.toDegrees(
-        Math.atan2((third.position.y - second.position.y).toDouble(), (third.position.x - second.position.x).toDouble()) -
-                Math.atan2((first.position.y - second.position.y).toDouble(), (first.position.x - second.position.x).toDouble())
-    )
-    result = Math.abs(result)
-    if (result > 180) {
-        result = 360.0 - result
-    }
-    return result
 }
