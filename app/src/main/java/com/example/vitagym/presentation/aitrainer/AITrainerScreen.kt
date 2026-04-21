@@ -9,6 +9,8 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -18,12 +20,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.example.vitagym.data.ml.ExerciseFormAnalyzer
+import com.example.vitagym.data.ml.ExerciseType
 import com.example.vitagym.data.ml.PoseDetectorManager
-import com.example.vitagym.util.AngleCalculator
+import com.example.vitagym.data.ml.toPoseAnalysis
 import com.example.vitagym.util.CameraPermissionHelper
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.pose.Pose
@@ -81,74 +86,126 @@ fun PoseDetectionCameraView(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     
     var detectedPose by remember { mutableStateOf<Pose?>(null) }
+    var exerciseType by remember { mutableStateOf<ExerciseType>(ExerciseType.Squat) }
+    
     val poseDetectorManager = remember { PoseDetectorManager() }
+    val formAnalyzer = remember { ExerciseFormAnalyzer() }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        AndroidView(
-            factory = { ctx ->
-                val previewView = PreviewView(ctx)
-                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+    Column(modifier = modifier.fillMaxSize()) {
+        // Exercise Selection
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .selectableGroup()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            ExerciseRadioButton("Squat", exerciseType == ExerciseType.Squat) { 
+                exerciseType = ExerciseType.Squat 
+                formAnalyzer.resetCounter()
+            }
+            ExerciseRadioButton("Push-up", exerciseType == ExerciseType.PushUp) { 
+                exerciseType = ExerciseType.PushUp 
+                formAnalyzer.resetCounter()
+            }
+            ExerciseRadioButton("Plank", exerciseType == ExerciseType.Plank) { 
+                exerciseType = ExerciseType.Plank 
+                formAnalyzer.resetCounter()
+            }
+        }
 
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
-                    
-                    val preview = Preview.Builder().build().also {
-                        it.setSurfaceProvider(previewView.surfaceProvider)
-                    }
+        Box(modifier = Modifier.weight(1f)) {
+            AndroidView(
+                factory = { ctx ->
+                    val previewView = PreviewView(ctx)
+                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
-                    val imageAnalysis = ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build()
-                        .also {
-                            it.setAnalyzer(executor) { imageProxy ->
-                                scope.launch {
-                                    val mediaImage = imageProxy.image
-                                    if (mediaImage != null) {
-                                        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-                                        val pose = poseDetectorManager.detectPose(image)
-                                        if (pose != null) {
-                                            detectedPose = pose
-                                        }
-                                    }
-                                    imageProxy.close()
-                                }
-                            }
+                    cameraProviderFuture.addListener({
+                        val cameraProvider = cameraProviderFuture.get()
+                        
+                        val preview = Preview.Builder().build().also {
+                            it.setSurfaceProvider(previewView.surfaceProvider)
                         }
 
-                    val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+                        val imageAnalysis = ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build()
+                            .also {
+                                it.setAnalyzer(executor) { imageProxy ->
+                                    scope.launch {
+                                        val mediaImage = imageProxy.image
+                                        if (mediaImage != null) {
+                                            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                                            val pose = poseDetectorManager.detectPose(image)
+                                            if (pose != null) {
+                                                detectedPose = pose
+                                            }
+                                        }
+                                        imageProxy.close()
+                                    }
+                                }
+                            }
 
-                    try {
-                        cameraProvider.unbindAll()
-                        cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            cameraSelector,
-                            preview,
-                            imageAnalysis
-                        )
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                        val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+
+                        try {
+                            cameraProvider.unbindAll()
+                            cameraProvider.bindToLifecycle(
+                                lifecycleOwner,
+                                cameraSelector,
+                                preview,
+                                imageAnalysis
+                            )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }, ContextCompat.getMainExecutor(ctx))
+                    previewView
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // Overlay for landmarks
+            detectedPose?.let { pose ->
+                PoseOverlay(pose = pose)
+            }
+            
+            // Feedback Box
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(24.dp)
+                    .background(Color.Black.copy(alpha = 0.6f), shape = MaterialTheme.shapes.medium)
+                    .padding(16.dp)
+            ) {
+                val feedback = remember(detectedPose, exerciseType) {
+                    detectedPose?.let { pose ->
+                        val analysis = pose.toPoseAnalysis()
+                        when (exerciseType) {
+                            ExerciseType.Squat -> formAnalyzer.analyzeSquat(analysis)
+                            ExerciseType.PushUp -> formAnalyzer.analyzePushUp(analysis)
+                            ExerciseType.Plank -> formAnalyzer.analyzePlank(analysis)
+                            else -> null
+                        }
                     }
-                }, ContextCompat.getMainExecutor(ctx))
-                previewView
-            },
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Overlay for landmarks
-        detectedPose?.let { pose ->
-            PoseOverlay(pose = pose)
-        }
-        
-        // Simple Feedback Box
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(24.dp)
-                .background(Color.Black.copy(alpha = 0.6f), shape = MaterialTheme.shapes.medium)
-                .padding(16.dp)
-        ) {
-            val feedback = getPoseFeedback(detectedPose)
-            Text(text = feedback, color = Color.White, fontSize = 18.sp)
+                }
+                
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = feedback?.feedback ?: "Scanning for pose...",
+                        color = if (feedback?.isCorrect == false) Color.Red else Color.White,
+                        fontSize = 18.sp
+                    )
+                    if (feedback != null && exerciseType != ExerciseType.Plank) {
+                        Text(
+                            text = "Reps: ${feedback.repCount}",
+                            color = Color.Cyan,
+                            fontSize = 24.sp,
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -157,6 +214,23 @@ fun PoseDetectionCameraView(modifier: Modifier = Modifier) {
             executor.shutdown()
             poseDetectorManager.close()
         }
+    }
+}
+
+@Composable
+fun ExerciseRadioButton(text: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .selectable(
+                selected = selected,
+                onClick = onClick,
+                role = Role.RadioButton
+            )
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Text(text = text, modifier = Modifier.padding(start = 4.dp), fontSize = 12.sp)
     }
 }
 
@@ -213,24 +287,4 @@ private fun drawPoseConnections(drawScope: androidx.compose.ui.graphics.drawscop
     drawLine(PoseLandmark.LEFT_KNEE, PoseLandmark.LEFT_ANKLE)
     drawLine(PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE)
     drawLine(PoseLandmark.RIGHT_KNEE, PoseLandmark.RIGHT_ANKLE)
-}
-
-fun getPoseFeedback(pose: Pose?): String {
-    if (pose == null) return "Scanning for pose..."
-    
-    val leftHip = pose.getPoseLandmark(PoseLandmark.LEFT_HIP)
-    val leftKnee = pose.getPoseLandmark(PoseLandmark.LEFT_KNEE)
-    val leftAnkle = pose.getPoseLandmark(PoseLandmark.LEFT_ANKLE)
-
-    if (leftHip != null && leftKnee != null && leftAnkle != null) {
-        val angle = AngleCalculator.getAngle(leftHip.position, leftKnee.position, leftAnkle.position)
-        return when {
-            angle > 160 -> "Stand straight"
-            angle in 90.0..120.0 -> "Good depth!"
-            angle < 90 -> "Too low!"
-            else -> "Performing Squat"
-        }
-    }
-    
-    return "Ensure full body is visible"
 }
