@@ -24,12 +24,14 @@ import java.util.Locale
 
 /**
  * Main dashboard screen where users can log new workouts.
- * 
+ *
  * @param viewModel ViewModel handling workout data operations.
  * @param onLogout Callback triggered when the user logs out.
  * @param onNavigateToHistory Callback to navigate to the workout history screen.
  * @param onNavigateToLocation Callback to navigate to the location/map screen.
  * @param onNavigateToAITrainer Callback to navigate to the AI trainer screen.
+ * @param onNavigateToQRScanner Callback to navigate to the QR scanner screen.
+ * @param onNavigateToCheckInHistory Callback to navigate to the check-in history screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +40,9 @@ fun DashboardScreen(
     onLogout: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onNavigateToLocation: () -> Unit,
-    onNavigateToAITrainer: () -> Unit
+    onNavigateToAITrainer: () -> Unit,
+    onNavigateToQRScanner: () -> Unit,
+    onNavigateToCheckInHistory: () -> Unit
 ) {
     val authRepository = remember { AuthRepository() }
     val currentUser = authRepository.getCurrentUser()
@@ -46,8 +50,7 @@ fun DashboardScreen(
 
     var title by remember { mutableStateOf("") }
     var duration by remember { mutableStateOf("") }
-    
-    // State for managing the date picker visibility and selection
+
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = System.currentTimeMillis())
     val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -99,7 +102,6 @@ fun DashboardScreen(
         ) {
             Text(text = "Add New Workout", style = MaterialTheme.typography.headlineSmall)
 
-            // Input for workout title/type
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
@@ -108,7 +110,6 @@ fun DashboardScreen(
                 trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
             )
 
-            // Input for workout duration in minutes
             OutlinedTextField(
                 value = duration,
                 onValueChange = { duration = it },
@@ -118,7 +119,6 @@ fun DashboardScreen(
                 trailingIcon = { Icon(Icons.Default.Timer, contentDescription = null) }
             )
 
-            // Read-only field that opens the Date Picker when clicked
             OutlinedTextField(
                 value = formattedDate,
                 onValueChange = { },
@@ -141,7 +141,6 @@ fun DashboardScreen(
                 }
             )
 
-            // Material 3 Date Picker Dialog
             if (showDatePicker) {
                 DatePickerDialog(
                     onDismissRequest = { showDatePicker = false },
@@ -160,18 +159,17 @@ fun DashboardScreen(
                 }
             }
 
-            // Submit button to save the workout
             Button(
                 onClick = {
                     if (title.isNotBlank() && duration.isNotBlank()) {
                         viewModel.addWorkout(
-                            title, 
-                            duration, 
+                            title,
+                            duration,
                             datePickerState.selectedDateMillis ?: System.currentTimeMillis()
                         )
                         title = ""
                         duration = ""
-                        onNavigateToHistory() // Navigate to list after adding
+                        onNavigateToHistory()
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -180,6 +178,33 @@ fun DashboardScreen(
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(id = R.string.button_addWorkout))
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // QR Check-In Button
+            Button(
+                onClick = onNavigateToQRScanner,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
+                ),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.QrCodeScanner, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Check In with QR Code")
+            }
+
+            // Check-In History Button
+            OutlinedButton(
+                onClick = onNavigateToCheckInHistory,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.Receipt, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("View Check-In History")
             }
         }
     }

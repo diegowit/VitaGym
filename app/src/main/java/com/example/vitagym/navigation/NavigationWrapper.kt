@@ -8,16 +8,17 @@ import androidx.navigation.compose.rememberNavController
 import com.example.vitagym.presentation.aitrainer.AITrainerScreen
 import com.example.vitagym.presentation.auth.login.LoginScreen
 import com.example.vitagym.presentation.auth.register.RegisterScreen
+import com.example.vitagym.presentation.checkin.CheckInHistoryScreen
 import com.example.vitagym.presentation.classes.WorkOutScreen
 import com.example.vitagym.presentation.classes.WorkoutViewModel
 import com.example.vitagym.presentation.dashboard.DashboardScreen
 import com.example.vitagym.presentation.dashboard.WelcomeScreen
 import com.example.vitagym.presentation.location.GymLocationScreen
+import com.example.vitagym.presentation.qrcode.QRScannerScreen
 
 @Composable
 fun NavigationWrapper() {
     val navController = rememberNavController()
-    // Shared ViewModel to persist workouts during the app session
     val workoutViewModel: WorkoutViewModel = viewModel()
 
     NavHost(navController = navController, startDestination = Welcome) {
@@ -31,7 +32,7 @@ fun NavigationWrapper() {
 
         composable<Login> {
             LoginScreen(
-                navigateToHome = { 
+                navigateToHome = {
                     navController.navigate(Dashboard) {
                         popUpTo(Login) { inclusive = true }
                     }
@@ -41,7 +42,7 @@ fun NavigationWrapper() {
 
         composable<Register> {
             RegisterScreen(
-                navigateToHome = { 
+                navigateToHome = {
                     navController.navigate(Dashboard) {
                         popUpTo(Register) { inclusive = true }
                     }
@@ -66,6 +67,12 @@ fun NavigationWrapper() {
                 },
                 onNavigateToAITrainer = {
                     navController.navigate(AITrainer)
+                },
+                onNavigateToQRScanner = {
+                    navController.navigate(QRScanner)
+                },
+                onNavigateToCheckInHistory = {
+                    navController.navigate(CheckInHistory)
                 }
             )
         }
@@ -86,6 +93,23 @@ fun NavigationWrapper() {
         composable<AITrainer> {
             AITrainerScreen(
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<QRScanner> {
+            QRScannerScreen(
+                onBackClick = { navController.navigateUp() },
+                onCheckInSuccess = {
+                    navController.navigate(Dashboard) {
+                        popUpTo(Dashboard) { inclusive = false }
+                    }
+                }
+            )
+        }
+
+        composable<CheckInHistory> {
+            CheckInHistoryScreen(
+                onBackClick = { navController.navigateUp() }
             )
         }
     }

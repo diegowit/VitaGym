@@ -22,3 +22,9 @@ object GymLocation
 
 @Serializable
 object AITrainer
+
+@Serializable
+object QRScanner
+
+@Serializable
+object CheckInHistory
