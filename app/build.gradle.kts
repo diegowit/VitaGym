@@ -65,6 +65,12 @@ dependencies {
 
     implementation(libs.timber)
 
+    // QR Code Scanning
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+
+    // Firestore (for storing check-ins)
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
     // ML Kit Pose Detection
     implementation("com.google.mlkit:pose-detection:18.0.0-beta3")
     implementation("com.google.mlkit:pose-detection-accurate:18.0.0-beta3")

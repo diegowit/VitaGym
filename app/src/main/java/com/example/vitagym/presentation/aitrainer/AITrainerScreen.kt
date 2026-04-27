@@ -3,6 +3,7 @@ package com.example.vitagym.presentation.aitrainer
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.OptIn
 import androidx.camera.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -72,6 +73,7 @@ fun AITrainerScreen(onBack: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalGetImage::class)
 @Composable
 fun PoseDetectionCameraView(onBack: () -> Unit) {
     val executor = remember { Executors.newSingleThreadExecutor() }
