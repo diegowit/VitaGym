@@ -28,3 +28,6 @@ object QRScanner
 
 @Serializable
 object CheckInHistory
+
+@Serializable
+object LogWorkout

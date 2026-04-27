@@ -1,38 +1,28 @@
 package com.example.vitagym.presentation.dashboard
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.vitagym.R
 import com.example.vitagym.presentation.auth.AuthRepository
 import com.example.vitagym.presentation.classes.WorkoutViewModel
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
-/**
- * Main dashboard screen where users can log new workouts.
- *
- * @param viewModel ViewModel handling workout data operations.
- * @param onLogout Callback triggered when the user logs out.
- * @param onNavigateToHistory Callback to navigate to the workout history screen.
- * @param onNavigateToLocation Callback to navigate to the location/map screen.
- * @param onNavigateToAITrainer Callback to navigate to the AI trainer screen.
- * @param onNavigateToQRScanner Callback to navigate to the QR scanner screen.
- * @param onNavigateToCheckInHistory Callback to navigate to the check-in history screen.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -42,170 +32,548 @@ fun DashboardScreen(
     onNavigateToLocation: () -> Unit,
     onNavigateToAITrainer: () -> Unit,
     onNavigateToQRScanner: () -> Unit,
-    onNavigateToCheckInHistory: () -> Unit
+    onNavigateToCheckInHistory: () -> Unit,
+    onNavigateToLogWorkout: () -> Unit  // ADDED THIS
 ) {
     val authRepository = remember { AuthRepository() }
     val currentUser = authRepository.getCurrentUser()
-    val userName = currentUser?.displayName ?: currentUser?.email ?: "User"
+    val userName = currentUser?.displayName ?: currentUser?.email?.substringBefore("@") ?: "User"
 
-    var title by remember { mutableStateOf("") }
-    var duration by remember { mutableStateOf("") }
-
-    var showDatePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = System.currentTimeMillis())
-    val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    val formattedDate = datePickerState.selectedDateMillis?.let { dateFormatter.format(Date(it)) } ?: ""
+    val scrollState = rememberScrollState()
+    val currentDate = remember {
+        SimpleDateFormat("EEE, MMM dd, yyyy", Locale.getDefault()).format(Date())
+    }
 
     Scaffold(
+        containerColor = Color(0xFF1A1A2E),
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
+                    containerColor = Color(0xFF1A1A2E)
                 ),
-                navigationIcon = {
-                    Icon(imageVector = Icons.Filled.Menu, contentDescription = "Menu", tint = Color.White)
-                },
-                title = {
-                    Column {
-                        Text(text = stringResource(id = R.string.app_name), color = Color.White, fontSize = 18.sp)
-                        Text(text = "Logged in as: $userName", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-                    }
-                },
+                title = { },
                 actions = {
-                    IconButton(onClick = onNavigateToAITrainer) {
-                        Icon(imageVector = Icons.Filled.FitnessCenter, contentDescription = "AI Trainer", tint = Color.White)
-                    }
-                    IconButton(onClick = onNavigateToLocation) {
-                        Icon(imageVector = Icons.Filled.LocationOn, contentDescription = "Location", tint = Color.White)
-                    }
-                    IconButton(onClick = onNavigateToHistory) {
-                        Icon(imageVector = Icons.Filled.History, contentDescription = "History", tint = Color.White)
-                    }
                     IconButton(onClick = {
                         authRepository.logout()
                         onLogout()
                     }) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout", tint = Color.White)
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Logout",
+                            tint = Color.White
+                        )
                     }
                 }
             )
-        },
-        modifier = Modifier.fillMaxSize()
-    ) { innerPadding ->
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
-                .padding(innerPadding)
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(paddingValues)
+                .verticalScroll(scrollState)
+                .padding(horizontal = 20.dp)
+        ) {
+            // Header Section
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column {
+                    Text(
+                        text = currentDate,
+                        fontSize = 13.sp,
+                        color = Color(0xFF8E8E93)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Daily Activity",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF00E5FF),
+                                    Color(0xFF0099B3)
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = userName.first().uppercase(),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            WeeklyCalendar()
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            QRCheckInCard(onQRCheckInClick = onNavigateToQRScanner)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            AITrainerCard(onAITrainerClick = onNavigateToAITrainer)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            GymStatsCard()
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            QuickActionsSection(
+                onFindGymsClick = onNavigateToLocation,
+                onHistoryClick = onNavigateToHistory,
+                onCheckInHistoryClick = onNavigateToCheckInHistory,
+                onLogWorkoutClick = onNavigateToLogWorkout  // ADDED THIS
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun WeeklyCalendar() {
+    val calendar = Calendar.getInstance()
+    val dateFormat = SimpleDateFormat("EEE\ndd", Locale.getDefault())
+    val daysOfWeek = (0..3).map { offset ->
+        calendar.add(Calendar.DAY_OF_MONTH, if (offset == 0) 0 else 1)
+        dateFormat.format(calendar.time)
+    }
+    val selectedDay = 0
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        daysOfWeek.forEachIndexed { index, day ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(70.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        if (index == selectedDay) {
+                            Color(0xFF00E5FF)
+                        } else {
+                            Color(0xFF2E3548)
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = day,
+                    fontSize = 14.sp,
+                    fontWeight = if (index == selectedDay) FontWeight.Bold else FontWeight.Normal,
+                    color = if (index == selectedDay) Color(0xFF1A1A2E) else Color(0xFF8E8E93),
+                    lineHeight = 20.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun QRCheckInCard(onQRCheckInClick: () -> Unit) {
+    Card(
+        onClick = onQRCheckInClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent
+        ),
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFF00E5FF),
+                            Color(0xFF0099B3)
+                        )
+                    ),
+                    shape = RoundedCornerShape(24.dp)
+                )
+                .padding(24.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.White.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.QrCodeScanner,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column {
+                        Text(
+                            text = "QR Check-In",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "Scan to check into gym",
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                    }
+                }
+
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AITrainerCard(onAITrainerClick: () -> Unit) {
+    Card(
+        onClick = onAITrainerClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF2E3548)
+        ),
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "AI Trainer",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+                Icon(
+                    imageVector = Icons.Default.FitnessCenter,
+                    contentDescription = null,
+                    tint = Color(0xFF00E5FF),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Start guided workout with real-time pose detection",
+                fontSize = 14.sp,
+                color = Color(0xFF8E8E93),
+                lineHeight = 20.sp
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                StatItem(
+                    icon = "🔥",
+                    value = "250",
+                    label = "Cal/session",
+                    color = Color(0xFFFF6B6B)
+                )
+                StatItem(
+                    icon = "⏱️",
+                    value = "45",
+                    label = "Minutes",
+                    color = Color(0xFF00E5FF)
+                )
+                StatItem(
+                    icon = "💪",
+                    value = "12",
+                    label = "Exercises",
+                    color = Color(0xFF00E5FF)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatItem(
+    icon: String,
+    value: String,
+    label: String,
+    color: Color
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = icon,
+            fontSize = 20.sp
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = value,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = Color(0xFF8E8E93)
+        )
+    }
+}
+
+@Composable
+private fun GymStatsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF2E3548)
+        ),
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "This Week",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+                Text(
+                    text = "4 workouts",
+                    fontSize = 12.sp,
+                    color = Color(0xFF00E5FF)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MiniStatCard(
+                    icon = "❤️",
+                    value = "88",
+                    label = "avg bpm"
+                )
+
+                MiniStatCard(
+                    icon = "🔥",
+                    value = "1.2k",
+                    label = "calories"
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MiniStatCard(
+                    icon = "⏱️",
+                    value = "3.5",
+                    label = "hours"
+                )
+
+                MiniStatCard(
+                    icon = "📈",
+                    value = "12",
+                    label = "day streak"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RowScope.MiniStatCard(
+    icon: String,
+    value: String,
+    label: String
+) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .height(80.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF3D4459))
+            .padding(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = icon,
+                fontSize = 16.sp
+            )
+            Column {
+                Text(
+                    text = value,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    color = Color(0xFF8E8E93)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickActionsSection(
+    onFindGymsClick: () -> Unit,
+    onHistoryClick: () -> Unit,
+    onCheckInHistoryClick: () -> Unit,
+    onLogWorkoutClick: () -> Unit  // ADDED THIS
+) {
+    Text(
+        text = "Quick Actions",
+        fontSize = 18.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = Color.White,
+        modifier = Modifier.padding(bottom = 12.dp)
+    )
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // First Row - Log Workout (Primary) + Find Gyms
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            QuickActionButton(
+                icon = Icons.Default.Add,
+                label = "Log Workout",
+                onClick = onLogWorkoutClick,
+                isPrimary = true  // Cyan highlight
+            )
+            QuickActionButton(
+                icon = Icons.Default.LocationOn,
+                label = "Find Gyms",
+                onClick = onFindGymsClick
+            )
+        }
+
+        // Second Row - History + Check-Ins
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            QuickActionButton(
+                icon = Icons.Default.History,
+                label = "Workouts",
+                onClick = onHistoryClick
+            )
+            QuickActionButton(
+                icon = Icons.Default.Receipt,
+                label = "Check-Ins",
+                onClick = onCheckInHistoryClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun RowScope.QuickActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    isPrimary: Boolean = false  // ADDED THIS
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.weight(1f),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isPrimary) {
+                Color(0xFF00E5FF)  // Cyan for primary action
+            } else {
+                Color(0xFF2E3548)  // Dark for others
+            }
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Add New Workout", style = MaterialTheme.typography.headlineSmall)
-
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(id = R.string.text_titleHint)) },
-                trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
-            )
-
-            OutlinedTextField(
-                value = duration,
-                onValueChange = { duration = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(id = R.string.text_durationHint)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                trailingIcon = { Icon(Icons.Default.Timer, contentDescription = null) }
-            )
-
-            OutlinedTextField(
-                value = formattedDate,
-                onValueChange = { },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showDatePicker = true },
-                label = { Text("Workout Date") },
-                readOnly = true,
-                enabled = false,
-                colors = OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                trailingIcon = {
-                    IconButton(onClick = { showDatePicker = true }) {
-                        Icon(Icons.Default.DateRange, contentDescription = "Select Date")
-                    }
-                }
-            )
-
-            if (showDatePicker) {
-                DatePickerDialog(
-                    onDismissRequest = { showDatePicker = false },
-                    confirmButton = {
-                        TextButton(onClick = { showDatePicker = false }) {
-                            Text("OK")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showDatePicker = false }) {
-                            Text("Cancel")
-                        }
-                    }
-                ) {
-                    DatePicker(state = datePickerState)
-                }
-            }
-
-            Button(
-                onClick = {
-                    if (title.isNotBlank() && duration.isNotBlank()) {
-                        viewModel.addWorkout(
-                            title,
-                            duration,
-                            datePickerState.selectedDateMillis ?: System.currentTimeMillis()
-                        )
-                        title = ""
-                        duration = ""
-                        onNavigateToHistory()
-                    }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isPrimary) {
+                    Color(0xFF1A1A2E)  // Dark icon on cyan
+                } else {
+                    Color(0xFF00E5FF)  // Cyan icon on dark
                 },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(id = R.string.button_addWorkout))
-            }
-
+                modifier = Modifier.size(28.dp)
+            )
             Spacer(modifier = Modifier.height(8.dp))
-
-            // QR Check-In Button
-            Button(
-                onClick = onNavigateToQRScanner,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                ),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.QrCodeScanner, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Check In with QR Code")
-            }
-
-            // Check-In History Button
-            OutlinedButton(
-                onClick = onNavigateToCheckInHistory,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.Receipt, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("View Check-In History")
-            }
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                color = if (isPrimary) {
+                    Color(0xFF1A1A2E)  // Dark text on cyan
+                } else {
+                    Color.White  // White text on dark
+                },
+                fontWeight = if (isPrimary) FontWeight.Bold else FontWeight.Medium
+            )
         }
     }
 }

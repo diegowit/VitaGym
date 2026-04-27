@@ -9,6 +9,7 @@ import com.example.vitagym.presentation.aitrainer.AITrainerScreen
 import com.example.vitagym.presentation.auth.login.LoginScreen
 import com.example.vitagym.presentation.auth.register.RegisterScreen
 import com.example.vitagym.presentation.checkin.CheckInHistoryScreen
+import com.example.vitagym.presentation.classes.LogWorkoutScreen
 import com.example.vitagym.presentation.classes.WorkOutScreen
 import com.example.vitagym.presentation.classes.WorkoutViewModel
 import com.example.vitagym.presentation.dashboard.DashboardScreen
@@ -73,6 +74,9 @@ fun NavigationWrapper() {
                 },
                 onNavigateToCheckInHistory = {
                     navController.navigate(CheckInHistory)
+                },
+                onNavigateToLogWorkout = {  // ← ADD THIS LINE
+                    navController.navigate(LogWorkout)
                 }
             )
         }
@@ -110,6 +114,18 @@ fun NavigationWrapper() {
         composable<CheckInHistory> {
             CheckInHistoryScreen(
                 onBackClick = { navController.navigateUp() }
+            )
+        }
+
+        composable<LogWorkout> {
+            LogWorkoutScreen(
+                viewModel = workoutViewModel,
+                onBackClick = { navController.navigateUp() },
+                onWorkoutAdded = {
+                    navController.navigate(WorkOutHistory) {
+                        popUpTo(Dashboard) { inclusive = false }
+                    }
+                }
             )
         }
     }

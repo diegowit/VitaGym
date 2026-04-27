@@ -29,8 +29,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.example.vitagym.data.checkin.CheckInRepository
 import com.example.vitagym.data.qr.QRCodeScanner
-import com.example.vitagym.utils.CameraPermissionHelper
+import com.example.vitagym.util.CameraPermissionHelper
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.launch
@@ -70,7 +71,7 @@ fun QRScannerScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (cameraPermissionState.hasPermission) {
+        if (cameraPermissionState.status.isGranted) {
             AndroidView(
                 factory = { ctx ->
                     val previewView = PreviewView(ctx)
@@ -164,7 +165,7 @@ fun QRScannerScreen(
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalAlignment = Arrangement.Center
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = "Camera permission required to scan QR codes",
@@ -340,30 +341,26 @@ private fun SuccessCard(gymName: String, modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Check-in Successful!",
-                fontSize = 22.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = gymName,
-                fontSize = 18.sp,
-                color = Color.White
+                text = "Welcome to $gymName",
+                fontSize = 16.sp,
+                color = Color.White.copy(alpha = 0.9f)
             )
         }
     }
 }
 
 @Composable
-private fun ErrorCard(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+private fun ErrorCard(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.padding(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFF5252)
+            containerColor = Color(0xFFE53935)
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -372,26 +369,27 @@ private fun ErrorCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Check-in Failed",
-                fontSize = 22.sp,
+                text = "Error",
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = message,
                 fontSize = 16.sp,
-                color = Color.White
+                color = Color.White,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = onRetry,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White,
-                    contentColor = Color(0xFFFF5252)
+                    contentColor = Color(0xFFE53935)
                 )
             ) {
-                Text("Try Again")
+                Text("Retry")
             }
         }
     }
