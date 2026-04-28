@@ -60,6 +60,7 @@ fun LogWorkoutScreen(
                             tint = Color.White
                         )
                     }
+
                 },
                 title = {
                     Text(
