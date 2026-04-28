@@ -1,5 +1,6 @@
 package com.example.vitagym.presentation.dashboard
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -71,11 +72,10 @@ fun DashboardScreen(
             )
         },
         bottomBar = {
-            // Floating Pill-Shaped Navigation Bar
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 24.dp)
+                    .padding(horizontal = 16.dp, vertical = 28.dp)
                     .navigationBarsPadding()
             ) {
                 Surface(
@@ -83,56 +83,65 @@ fun DashboardScreen(
                         .fillMaxWidth()
                         .height(72.dp),
                     shape = RoundedCornerShape(36.dp),
-                    color = Color(0xFF2E3548),
-                    shadowElevation = 20.dp,
-                    tonalElevation = 12.dp
+                    color = Color(0xFF25253D),
+                    shadowElevation = 24.dp,
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
                 ) {
                     NavigationBar(
                         containerColor = Color.Transparent,
                         windowInsets = WindowInsets(0.dp)
                     ) {
                         NavigationBarItem(
-                            icon = { Icon(Icons.Default.Add, contentDescription = "Log", modifier = Modifier.size(26.dp)) },
-                            label = { Text("Log", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                            icon = { Icon(Icons.Default.Home, contentDescription = "Home", modifier = Modifier.size(24.dp)) },
+                            label = { Text("Home", fontSize = 10.sp) },
+                            selected = true,
+                            onClick = { },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Color(0xFF1A1A2E),
+                                selectedTextColor = Color(0xFF00E5FF),
+                                indicatorColor = Color(0xFF00E5FF),
+                                unselectedIconColor = Color.White.copy(alpha = 0.5f),
+                                unselectedTextColor = Color.White.copy(alpha = 0.5f)
+                            )
+                        )
+                        NavigationBarItem(
+                            icon = { Icon(Icons.Default.Add, contentDescription = "Log Workout", modifier = Modifier.size(24.dp)) },
+                            label = { Text("Log", fontSize = 10.sp) },
                             selected = false,
                             onClick = onNavigateToLogWorkout,
                             colors = NavigationBarItemDefaults.colors(
-                                unselectedIconColor = Color(0xFF00E5FF),
-                                unselectedTextColor = Color.White.copy(alpha = 0.8f),
-                                indicatorColor = Color(0xFF00E5FF).copy(alpha = 0.12f)
+                                unselectedIconColor = Color.White.copy(alpha = 0.5f),
+                                unselectedTextColor = Color.White.copy(alpha = 0.5f)
                             )
                         )
                         NavigationBarItem(
-                            icon = { Icon(Icons.Default.History, contentDescription = "History", modifier = Modifier.size(26.dp)) },
-                            label = { Text("History", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                            icon = { Icon(Icons.Default.History, contentDescription = "History", modifier = Modifier.size(24.dp)) },
+                            label = { Text("History", fontSize = 10.sp) },
                             selected = false,
                             onClick = onNavigateToHistory,
                             colors = NavigationBarItemDefaults.colors(
-                                unselectedIconColor = Color(0xFF00E5FF),
-                                unselectedTextColor = Color.White.copy(alpha = 0.8f),
-                                indicatorColor = Color(0xFF00E5FF).copy(alpha = 0.12f)
+                                unselectedIconColor = Color.White.copy(alpha = 0.5f),
+                                unselectedTextColor = Color.White.copy(alpha = 0.5f)
                             )
                         )
                         NavigationBarItem(
-                            icon = { Icon(Icons.Default.LocationOn, contentDescription = "Gyms", modifier = Modifier.size(26.dp)) },
-                            label = { Text("Gyms", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                            icon = { Icon(Icons.Default.LocationOn, contentDescription = "Gyms", modifier = Modifier.size(24.dp)) },
+                            label = { Text("Gyms", fontSize = 10.sp) },
                             selected = false,
                             onClick = onNavigateToLocation,
                             colors = NavigationBarItemDefaults.colors(
-                                unselectedIconColor = Color(0xFF00E5FF),
-                                unselectedTextColor = Color.White.copy(alpha = 0.8f),
-                                indicatorColor = Color(0xFF00E5FF).copy(alpha = 0.12f)
+                                unselectedIconColor = Color.White.copy(alpha = 0.5f),
+                                unselectedTextColor = Color.White.copy(alpha = 0.5f)
                             )
                         )
                         NavigationBarItem(
-                            icon = { Icon(Icons.Default.Receipt, contentDescription = "Check-ins", modifier = Modifier.size(26.dp)) },
-                            label = { Text("Checks", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                            icon = { Icon(Icons.Default.Receipt, contentDescription = "Check-ins", modifier = Modifier.size(24.dp)) },
+                            label = { Text("Checks", fontSize = 10.sp) },
                             selected = false,
                             onClick = onNavigateToCheckInHistory,
                             colors = NavigationBarItemDefaults.colors(
-                                unselectedIconColor = Color(0xFF00E5FF),
-                                unselectedTextColor = Color.White.copy(alpha = 0.8f),
-                                indicatorColor = Color(0xFF00E5FF).copy(alpha = 0.12f)
+                                unselectedIconColor = Color.White.copy(alpha = 0.5f),
+                                unselectedTextColor = Color.White.copy(alpha = 0.5f)
                             )
                         )
                     }
@@ -147,7 +156,6 @@ fun DashboardScreen(
                 .verticalScroll(scrollState)
                 .padding(horizontal = 20.dp)
         ) {
-            // Header Section
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -221,8 +229,7 @@ fun DashboardScreen(
             )
             GymStatsCard(weeklyStats = weeklyStats)
 
-            // Buffer spacing to prevent bottom bar from covering content
-            Spacer(modifier = Modifier.height(120.dp))
+            Spacer(modifier = Modifier.height(140.dp))
         }
     }
 }
@@ -351,7 +358,8 @@ private fun AITrainerCard(onAITrainerClick: () -> Unit) {
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF2E3548)
         ),
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.3f))
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
@@ -361,17 +369,33 @@ private fun AITrainerCard(onAITrainerClick: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "AI Trainer",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFF00E5FF).copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FitnessCenter,
+                            contentDescription = null,
+                            tint = Color(0xFF00E5FF),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "AI Trainer",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
                 Icon(
-                    imageVector = Icons.Default.FitnessCenter,
+                    imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
-                    tint = Color(0xFF00E5FF),
-                    modifier = Modifier.size(24.dp)
+                    tint = Color(0xFF00E5FF).copy(alpha = 0.7f)
                 )
             }
 
@@ -384,7 +408,7 @@ private fun AITrainerCard(onAITrainerClick: () -> Unit) {
                 lineHeight = 20.sp
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -402,6 +426,34 @@ private fun AITrainerCard(onAITrainerClick: () -> Unit) {
                     label = "Exercises",
                     color = Color(0xFF00E5FF)
                 )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFF00E5FF).copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "START GUIDED SESSION",
+                        color = Color(0xFF00E5FF),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 13.sp,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = Color(0xFF00E5FF),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }
