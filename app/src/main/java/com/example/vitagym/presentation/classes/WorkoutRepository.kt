@@ -1,8 +1,11 @@
 package com.example.vitagym.presentation.classes
 
+import com.example.vitagym.domain.model.Exercise
 import com.example.vitagym.domain.model.Workout
+import com.example.vitagym.domain.model.WorkoutType
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -11,93 +14,121 @@ import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 
 /**
- * Repository for handling workout-related data operations with Firestore.
+ * Repository for managing workout data with Firebase Firestore.
  */
 class WorkoutRepository {
-    private val firestore = FirebaseFirestore.getInstance()
+    private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    private val workoutsCollection = firestore.collection("workouts")
 
     /**
-     * Streams the list of workouts for the current user from Firestore.
-     * Uses [callbackFlow] to listen for real-time updates.
+     * Get current user's workouts as a Flow that reacts to auth changes.
      */
     fun getWorkouts(): Flow<List<Workout>> = callbackFlow {
-        val userId = auth.currentUser?.uid
-        if (userId.isNullOrEmpty()) {
-            trySend(emptyList())
-            close() // Close the flow if no user is logged in
-            return@callbackFlow
+        var listenerRegistration: ListenerRegistration? = null
+
+        // Listen for Auth changes to handle login/logout/re-login
+        val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            val userId = firebaseAuth.currentUser?.uid
+            
+            // Remove previous listener if user changed
+            listenerRegistration?.remove()
+
+            if (userId == null) {
+                Timber.w("No authenticated user, providing empty list")
+                trySend(emptyList())
+            } else {
+                Timber.d("User authenticated: $userId, attaching Firestore listener")
+                listenerRegistration = db.collection("workouts")
+                    .whereEqualTo("userId", userId)
+                    .orderBy("date", Query.Direction.DESCENDING)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            Timber.e(error, "Error fetching workouts from Firestore")
+                            return@addSnapshotListener
+                        }
+
+                        val workouts = snapshot?.documents?.mapNotNull { doc ->
+                            try {
+                                doc.toObject(Workout::class.java)?.copy(id = doc.id)
+                            } catch (e: Exception) {
+                                Timber.e(e, "Error parsing workout document: ${doc.id}")
+                                null
+                            }
+                        } ?: emptyList()
+
+                        Timber.d("Successfully fetched ${workouts.size} workouts for user: $userId")
+                        trySend(workouts)
+                    }
+            }
         }
 
-        // Setting up a snapshot listener for real-time updates from Firestore
-        val subscription = workoutsCollection
-            .whereEqualTo("userId", userId)
-            .orderBy("date", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    Timber.e(error, "Error fetching workouts")
-                    // Note: We don't close the flow on error to allow for retry/recovery
-                    return@addSnapshotListener
-                }
-                if (snapshot != null) {
-                    val workouts = snapshot.toObjects(Workout::class.java)
-                    trySend(workouts)
-                }
-            }
+        auth.addAuthStateListener(authListener)
 
-        // Crucial: This block is executed when the flow is cancelled or closed.
-        // It ensures the Firestore listener is removed to prevent memory leaks.
+        // Clean up listeners when the flow is closed
         awaitClose {
-            subscription.remove()
-            Timber.d("Firestore workout subscription removed")
+            auth.removeAuthStateListener(authListener)
+            listenerRegistration?.remove()
+            Timber.d("Workout Flow closed, listeners removed")
         }
     }
 
-    /**
-     * Adds a new workout to the current user's collection in Firestore.
-     */
     suspend fun addWorkout(title: String, duration: Int, date: Long) {
         val userId = auth.currentUser?.uid ?: return
         val workout = Workout(
-            id = workoutsCollection.document().id,
             userId = userId,
             title = title,
             duration = duration,
-            date = date
+            date = date,
+            workoutType = WorkoutType.CUSTOM
         )
-
         try {
-            workoutsCollection.document(workout.id).set(workout).await()
-            Timber.i("Workout saved to Firestore: ${workout.title}")
+            db.collection("workouts").add(workout).await()
+            Timber.i("Custom workout saved: $title")
         } catch (e: Exception) {
-            Timber.e(e, "Error saving workout to Firestore")
+            Timber.e(e, "Error saving custom workout")
         }
     }
 
-    /**
-     * Updates an existing workout's details in Firestore.
-     */
+    suspend fun addAIWorkout(
+        title: String,
+        duration: Int,
+        date: Long,
+        exercises: List<Exercise>,
+        totalReps: Int,
+        workoutType: WorkoutType
+    ) {
+        val userId = auth.currentUser?.uid ?: return
+        val workout = Workout(
+            userId = userId,
+            title = title,
+            duration = duration,
+            date = date,
+            exercises = exercises,
+            totalReps = totalReps,
+            workoutType = workoutType
+        )
+        try {
+            db.collection("workouts").add(workout).await()
+            Timber.i("AI workout saved: $title")
+        } catch (e: Exception) {
+            Timber.e(e, "Error saving AI workout")
+        }
+    }
+
     suspend fun updateWorkout(workout: Workout) {
         if (workout.id.isEmpty()) return
         try {
-            workoutsCollection.document(workout.id).set(workout).await()
-            Timber.i("Workout updated in Firestore: ${workout.title}")
+            db.collection("workouts").document(workout.id).set(workout).await()
         } catch (e: Exception) {
-            Timber.e(e, "Error updating workout in Firestore")
+            Timber.e(e, "Error updating workout")
         }
     }
 
-    /**
-     * Deletes a specific workout from Firestore by its ID.
-     */
     suspend fun deleteWorkout(workoutId: String) {
-        if (workoutId.isEmpty()) return
         try {
-            workoutsCollection.document(workoutId).delete().await()
-            Timber.i("Workout deleted from Firestore: $workoutId")
+            db.collection("workouts").document(workoutId).delete().await()
         } catch (e: Exception) {
-            Timber.e(e, "Error deleting workout from Firestore")
+            Timber.e(e, "Error deleting workout")
         }
     }
 }

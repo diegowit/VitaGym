@@ -19,3 +19,15 @@ object WorkOutHistory
 
 @Serializable
 object GymLocation
+
+@Serializable
+object AITrainer
+
+@Serializable
+object QRScanner
+
+@Serializable
+object CheckInHistory
+
+@Serializable
+object LogWorkout

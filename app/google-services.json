@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "775681389665",
+    "project_id": "vitagym-991e6",
+    "storage_bucket": "vitagym-991e6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:775681389665:android:1131701acf021684efa620",
+        "android_client_info": {
+          "package_name": "com.example.vitagym"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAstwtmiz6k3dXdIT-zba_AXTxqj3k-GPU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

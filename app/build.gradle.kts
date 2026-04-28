@@ -36,6 +36,13 @@ android {
     buildFeatures {
         compose = true
     }
+
+    packaging {
+        jniLibs {
+            // Setting this to false allows native libraries to be uncompressed and 16KB aligned
+            useLegacyPackaging = false
+        }
+    }
 }
 
 dependencies {
@@ -58,12 +65,31 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
-    implementation("com.google.android.gms:play-services-auth:20.4.1")
+    implementation(libs.play.services.auth)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.0")
     implementation("io.coil-kt:coil-compose:2.2.2")
 
     implementation(libs.timber)
+
+    // QR Code Scanning - Updated for 16KB support
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+
+    // Firestore
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
+    // ML Kit Pose Detection - Updated for 16KB support
+    implementation("com.google.mlkit:pose-detection:18.0.0-beta5")
+    implementation("com.google.mlkit:pose-detection-accurate:18.0.0-beta5")
+
+    // CameraX
+    val camerax_version = "1.3.1"
+    implementation("androidx.camera:camera-core:${camerax_version}")
+    implementation("androidx.camera:camera-camera2:${camerax_version}")
+    implementation("androidx.camera:camera-lifecycle:${camerax_version}")
+    implementation("androidx.camera:camera-view:${camerax_version}")
+
+    implementation("androidx.compose.ui:ui-graphics")
     
     // Maps
     implementation(libs.maps.compose)
@@ -71,6 +97,9 @@ dependencies {
 
     // Splash Screen
     implementation(libs.androidx.core.splashscreen)
+
+    // Permissions
+    implementation(libs.accompanist.permissions)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

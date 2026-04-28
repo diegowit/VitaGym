@@ -1,45 +1,64 @@
-# VitaGym
+# VitaGym 🏋️
 
-VitaGym is a modern Android application designed to help users track their workouts and manage their fitness journey. Built with Jetpack Compose and Firebase, it offers a seamless and responsive user experience.
+VitaGym is a modern Android fitness application designed to help users track their workouts, log gym check-ins, and manage their fitness journey. Built with Jetpack Compose and Firebase, it offers a seamless, responsive, and visually stunning user experience with a high-contrast dark theme.
 
-## Features
+## 📸 App Preview
 
-- **User Authentication:** Secure login and registration using Firebase Authentication, including Google Sign-In support.
-- **Workout Dashboard:** Easily add new workouts with details such as title, duration, and date.
-- **Workout History:** View and manage your past workouts.
-- **Edit & Delete:** Update workout details or remove entries from your history.
-- **Date Picker:** Interactive date selection for both adding and editing workouts.
-- **Location Services:** (In progress) Integration for gym locations or workout spots.
+| Dashboard | AI Trainer | Workout History |
+| :---: | :---: | :---: |
+| <img src="screenshots/dashboard.png" width="200" /> | <img src="screenshots/ai_trainer.png" width="200" /> | <img src="screenshots/history.png" width="200" /> |
 
-## Tech Stack
+## ✨ Features
 
-- **UI:** [Jetpack Compose](https://developer.android.com/jetpack/compose) for a modern, declarative UI.
-- **Architecture:** MVVM (Model-View-ViewModel) for clean separation of concerns.
-- **Backend:** [Firebase](https://firebase.google.com/) (Auth & Firestore) for real-time data and authentication.
-- **Maps:** Google Maps Compose for location-based features.
-- **Language:** Kotlin.
-- **DI/Networking/Utils:** Timber for logging, Coil for image loading.
+### 🔐 User Authentication
+- **Secure Access**: Login and registration powered by **Firebase Authentication**.
+- **Google Sign-In**: Quick one-tap access for a seamless onboarding experience.
+- **Data Privacy**: Complete data isolation using user-scoped Firestore security rules.
 
-## Getting Started
+### 🤖 AI Trainer (Real-time Analysis)
+- **Pose Detection**: Uses **Google ML Kit** to analyze body posture in real-time.
+- **Automated Rep Counting**: Smart state-tracking logic to count Squats and Push-ups automatically.
+- **Form Feedback**: Instant visual feedback on exercise depth and core alignment to prevent injury.
+- **Privacy-First**: Video processing happens entirely on-device; no recordings are stored or uploaded.
 
-### Prerequisites
+### 📊 Workout & Progress Tracking
+- **Interactive Dashboard**: View "Daily Activity" at a glance with a custom weekly schedule.
+- **Performance Metrics**: Real-time tracking of total workout time, exercises completed, and rep counts.
+- **Manual Logging**: Easy-to-use interface for logging custom sessions or predefined routines.
+- **History Management**: Comprehensive workout log with color-coded summaries and deletion support.
 
-- Android Studio Iguana or newer.
-- A Firebase project set up in the [Firebase Console](https://console.firebase.google.com/).
-- `google-services.json` file placed in the `app/` directory.
+### 🏢 Gym Check-In System
+- **QR Integration**: Instant gym check-in via QR code scanning (`GYM_ID|Gym Name`).
+- **Activity Log**: Keep track of all gym visits with automated timestamps.
 
-### Installation
+### 🎨 Premium UI/UX
+- **Floating Navigation**: A modern, pill-shaped persistent bottom bar for quick multitasking.
+- **Fluid Motion**: Professional horizontal slide and fade transitions between all screens.
+- **Splash Screen**: Custom animated launch experience that matches the app's dark aesthetic.
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/vitagym.git
-   ```
-2. Open the project in Android Studio.
-3. Sync the project with Gradle files.
-4. Run the app on an emulator or a physical device.
+## 🔒 Privacy & Data Security
 
-## Contributing
+Privacy is a core pillar of VitaGym. We use advanced on-device processing to ensure your data stays yours:
+- **On-Device AI**: All pose detection and form analysis are performed locally on your smartphone.
+- **Zero Video Storage**: Raw camera frames are processed in volatile memory and immediately discarded. VitaGym **never** records, stores, or transmits your video or images.
+- **Metadata Only**: Only numeric workout statistics (reps, duration, date) are saved to your secure Firebase profile.
 
-Contributions are welcome! Please feel free to submit a Pull Request or open an issue for any bugs or feature requests.
+## 🛠️ Tech Stack
 
+- **UI**: Jetpack Compose (Material 3)
+- **Language**: Kotlin 100%
+- **Backend**: Firebase (Auth & Firestore)
+- **AI/ML**: Google ML Kit (Pose Detection & Barcode Scanning)
+- **Camera**: CameraX
+- **Architecture**: MVVM + Repository Pattern
+- **Logging**: Timber
 
+## 🚀 Getting Started
+
+1. **Firebase Setup**: Add your `google-services.json` to the `app/` folder.
+2. **Firestore Rules**: Deploy the security rules found in the documentation to your Firebase console.
+3. **Indexes**: Click the auto-generated links in Android Studio's Logcat to create the required composite indexes for sorted queries.
+
+---
+
+**Made with ❤️ for fitness enthusiasts**
