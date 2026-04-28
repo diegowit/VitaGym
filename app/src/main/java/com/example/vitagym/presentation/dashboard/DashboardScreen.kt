@@ -41,7 +41,6 @@ fun DashboardScreen(
     val currentUser = authRepository.getCurrentUser()
     val userName = currentUser?.displayName ?: currentUser?.email?.substringBefore("@") ?: "User"
 
-    // Collect real stats from ViewModel
     val weeklyStats by viewModel.weeklyStats.collectAsStateWithLifecycle()
 
     val scrollState = rememberScrollState()
@@ -70,6 +69,75 @@ fun DashboardScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            // Floating Pill-Shaped Navigation Bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 24.dp)
+                    .navigationBarsPadding()
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(72.dp),
+                    shape = RoundedCornerShape(36.dp),
+                    color = Color(0xFF2E3548),
+                    shadowElevation = 20.dp,
+                    tonalElevation = 12.dp
+                ) {
+                    NavigationBar(
+                        containerColor = Color.Transparent,
+                        windowInsets = WindowInsets(0.dp)
+                    ) {
+                        NavigationBarItem(
+                            icon = { Icon(Icons.Default.Add, contentDescription = "Log", modifier = Modifier.size(26.dp)) },
+                            label = { Text("Log", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                            selected = false,
+                            onClick = onNavigateToLogWorkout,
+                            colors = NavigationBarItemDefaults.colors(
+                                unselectedIconColor = Color(0xFF00E5FF),
+                                unselectedTextColor = Color.White.copy(alpha = 0.8f),
+                                indicatorColor = Color(0xFF00E5FF).copy(alpha = 0.12f)
+                            )
+                        )
+                        NavigationBarItem(
+                            icon = { Icon(Icons.Default.History, contentDescription = "History", modifier = Modifier.size(26.dp)) },
+                            label = { Text("History", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                            selected = false,
+                            onClick = onNavigateToHistory,
+                            colors = NavigationBarItemDefaults.colors(
+                                unselectedIconColor = Color(0xFF00E5FF),
+                                unselectedTextColor = Color.White.copy(alpha = 0.8f),
+                                indicatorColor = Color(0xFF00E5FF).copy(alpha = 0.12f)
+                            )
+                        )
+                        NavigationBarItem(
+                            icon = { Icon(Icons.Default.LocationOn, contentDescription = "Gyms", modifier = Modifier.size(26.dp)) },
+                            label = { Text("Gyms", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                            selected = false,
+                            onClick = onNavigateToLocation,
+                            colors = NavigationBarItemDefaults.colors(
+                                unselectedIconColor = Color(0xFF00E5FF),
+                                unselectedTextColor = Color.White.copy(alpha = 0.8f),
+                                indicatorColor = Color(0xFF00E5FF).copy(alpha = 0.12f)
+                            )
+                        )
+                        NavigationBarItem(
+                            icon = { Icon(Icons.Default.Receipt, contentDescription = "Check-ins", modifier = Modifier.size(26.dp)) },
+                            label = { Text("Checks", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                            selected = false,
+                            onClick = onNavigateToCheckInHistory,
+                            colors = NavigationBarItemDefaults.colors(
+                                unselectedIconColor = Color(0xFF00E5FF),
+                                unselectedTextColor = Color.White.copy(alpha = 0.8f),
+                                indicatorColor = Color(0xFF00E5FF).copy(alpha = 0.12f)
+                            )
+                        )
+                    }
+                }
+            }
         }
     ) { paddingValues ->
         Column(
@@ -153,16 +221,8 @@ fun DashboardScreen(
             )
             GymStatsCard(weeklyStats = weeklyStats)
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            QuickActionsSection(
-                onFindGymsClick = onNavigateToLocation,
-                onHistoryClick = onNavigateToHistory,
-                onCheckInHistoryClick = onNavigateToCheckInHistory,
-                onLogWorkoutClick = onNavigateToLogWorkout
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
+            // Buffer spacing to prevent bottom bar from covering content
+            Spacer(modifier = Modifier.height(120.dp))
         }
     }
 }
@@ -328,14 +388,8 @@ private fun AITrainerCard(onAITrainerClick: () -> Unit) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceAround
             ) {
-                StatItem(
-                    icon = "🔥",
-                    value = "250",
-                    label = "Calories",
-                    color = Color(0xFFFF6B6B)
-                )
                 StatItem(
                     icon = "⏱️",
                     value = "45",
@@ -494,109 +548,6 @@ private fun RowScope.MiniStatCard(
                     color = Color(0xFF8E8E93)
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun QuickActionsSection(
-    onFindGymsClick: () -> Unit,
-    onHistoryClick: () -> Unit,
-    onCheckInHistoryClick: () -> Unit,
-    onLogWorkoutClick: () -> Unit
-) {
-    Text(
-        text = "Quick Actions",
-        fontSize = 18.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = Color.White,
-        modifier = Modifier.padding(bottom = 12.dp)
-    )
-
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            QuickActionButton(
-                icon = Icons.Default.Add,
-                label = "Log Workout",
-                onClick = onLogWorkoutClick,
-                isPrimary = true
-            )
-            QuickActionButton(
-                icon = Icons.Default.LocationOn,
-                label = "Find Gyms",
-                onClick = onFindGymsClick
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            QuickActionButton(
-                icon = Icons.Default.History,
-                label = "Workouts",
-                onClick = onHistoryClick
-            )
-            QuickActionButton(
-                icon = Icons.Default.Receipt,
-                label = "Check-Ins",
-                onClick = onCheckInHistoryClick
-            )
-        }
-    }
-}
-
-@Composable
-private fun RowScope.QuickActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    isPrimary: Boolean = false
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.weight(1f),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isPrimary) {
-                Color(0xFF00E5FF)
-            } else {
-                Color(0xFF2E3548)
-            }
-        ),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (isPrimary) {
-                    Color(0xFF1A1A2E)
-                } else {
-                    Color(0xFF00E5FF)
-                },
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                color = if (isPrimary) {
-                    Color(0xFF1A1A2E)
-                } else {
-                    Color.White
-                },
-                fontWeight = if (isPrimary) FontWeight.Bold else FontWeight.Medium
-            )
         }
     }
 }
