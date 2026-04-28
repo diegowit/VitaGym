@@ -37,15 +37,23 @@ import com.example.vitagym.presentation.dashboard.WelcomeScreen
 import com.example.vitagym.presentation.location.GymLocationScreen
 import com.example.vitagym.presentation.qrcode.QRScannerScreen
 
+/**
+ * The main navigation component of the application.
+ * Manages the screen backstack, global UI elements like the Bottom Navigation Bar,
+ * and standardizes transitions between destinations.
+ */
 @Composable
 fun NavigationWrapper() {
     val navController = rememberNavController()
+    
+    // Shared ViewModel instance available to all screens in the graph
     val workoutViewModel: WorkoutViewModel = viewModel()
     
+    // Observe the current navigation state to update UI elements (like the Bottom Bar)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    // Define which screens should show the Bottom Bar
+    // Logic to determine when to show the floating Bottom Navigation Bar
     val mainScreens = listOf(
         Dashboard::class,
         LogWorkout::class,
@@ -54,11 +62,13 @@ fun NavigationWrapper() {
         CheckInHistory::class
     )
     
+    // Show bar only if the current route is one of the primary application hubs
     val showBottomBar = mainScreens.any { route -> currentDestination?.hasRoute(route) == true }
 
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
+                // --- FLOATING BOTTOM NAVIGATION BAR ---
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -78,13 +88,14 @@ fun NavigationWrapper() {
                             containerColor = Color.Transparent,
                             windowInsets = WindowInsets(0.dp)
                         ) {
-                            // Home
+                            // Home Tab
                             NavigationBarItem(
                                 icon = { Icon(Icons.Default.Home, contentDescription = "Home", modifier = Modifier.size(24.dp)) },
                                 label = { Text("Home", fontSize = 10.sp) },
                                 selected = currentDestination?.hasRoute<Dashboard>() == true,
                                 onClick = {
                                     navController.navigate(Dashboard) {
+                                        // Standard tab navigation behavior: avoid multiple copies of same destination
                                         popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                         launchSingleTop = true
                                         restoreState = true
@@ -92,7 +103,7 @@ fun NavigationWrapper() {
                                 },
                                 colors = navigationItemColors()
                             )
-                            // Log
+                            // Log Workout Tab
                             NavigationBarItem(
                                 icon = { Icon(Icons.Default.Add, contentDescription = "Log", modifier = Modifier.size(24.dp)) },
                                 label = { Text("Log", fontSize = 10.sp) },
@@ -106,7 +117,7 @@ fun NavigationWrapper() {
                                 },
                                 colors = navigationItemColors()
                             )
-                            // History
+                            // Workout History Tab
                             NavigationBarItem(
                                 icon = { Icon(Icons.Default.History, contentDescription = "History", modifier = Modifier.size(24.dp)) },
                                 label = { Text("History", fontSize = 10.sp) },
@@ -120,7 +131,7 @@ fun NavigationWrapper() {
                                 },
                                 colors = navigationItemColors()
                             )
-                            // Gyms
+                            // Gym Locator Tab
                             NavigationBarItem(
                                 icon = { Icon(Icons.Default.LocationOn, contentDescription = "Gyms", modifier = Modifier.size(24.dp)) },
                                 label = { Text("Gyms", fontSize = 10.sp) },
@@ -134,7 +145,7 @@ fun NavigationWrapper() {
                                 },
                                 colors = navigationItemColors()
                             )
-                            // Checks
+                            // Check-in History Tab
                             NavigationBarItem(
                                 icon = { Icon(Icons.Default.Receipt, contentDescription = "Checks", modifier = Modifier.size(24.dp)) },
                                 label = { Text("Checks", fontSize = 10.sp) },
@@ -154,10 +165,11 @@ fun NavigationWrapper() {
             }
         }
     ) { innerPadding ->
+        // Main content area where screens are swapped
         NavHost(
             navController = navController, 
             startDestination = Welcome,
-            modifier = Modifier.padding(bottom = if (showBottomBar) 0.dp else 0.dp), // We handle padding inside screens or via Scaffold
+            // Applies consistent slide + fade animations to all screen changes
             enterTransition = {
                 slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(350)) + fadeIn(tween(350))
             },
@@ -171,6 +183,7 @@ fun NavigationWrapper() {
                 slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(350)) + fadeOut(tween(350))
             }
         ) {
+            // Welcome/Auth Flow
             composable<Welcome> {
                 WelcomeScreen(
                     navigateToLogin = { navController.navigate(Login) },
@@ -199,6 +212,7 @@ fun NavigationWrapper() {
                 )
             }
 
+            // Main Core Features
             composable<Dashboard> {
                 DashboardScreen(
                     viewModel = workoutViewModel,
@@ -229,6 +243,7 @@ fun NavigationWrapper() {
                 )
             }
 
+            // AI Features
             composable<AITrainer> {
                 AITrainerScreen(
                     viewModel = workoutViewModel,
@@ -236,6 +251,7 @@ fun NavigationWrapper() {
                 )
             }
 
+            // Utility Features
             composable<QRScanner> {
                 QRScannerScreen(
                     onBackClick = { navController.navigateUp() },
@@ -268,6 +284,9 @@ fun NavigationWrapper() {
     }
 }
 
+/**
+ * Consistent styling for navigation bar items.
+ */
 @Composable
 private fun navigationItemColors() = NavigationBarItemDefaults.colors(
     selectedIconColor = Color(0xFF1A1A2E),

@@ -38,6 +38,10 @@ import com.google.mlkit.vision.pose.PoseLandmark
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 
+/**
+ * Entry point for the AI Trainer feature.
+ * Handles camera permissions and initializes the pose detection view.
+ */
 @Composable
 fun AITrainerScreen(viewModel: WorkoutViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -45,11 +49,13 @@ fun AITrainerScreen(viewModel: WorkoutViewModel, onBack: () -> Unit) {
         mutableStateOf(CameraPermissionHelper.hasCameraPermission(context))
     }
 
+    // Permission launcher to handle user camera access
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { granted -> hasCameraPermission = granted }
     )
 
+    // Request permission on launch if not already granted
     LaunchedEffect(key1 = true) {
         if (!hasCameraPermission) {
             launcher.launch(Manifest.permission.CAMERA)
@@ -60,6 +66,7 @@ fun AITrainerScreen(viewModel: WorkoutViewModel, onBack: () -> Unit) {
         if (hasCameraPermission) {
             PoseDetectionCameraView(viewModel = viewModel, onBack = onBack)
         } else {
+            // Permission fallback UI
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -75,22 +82,29 @@ fun AITrainerScreen(viewModel: WorkoutViewModel, onBack: () -> Unit) {
     }
 }
 
+/**
+ * Main camera view that processes live video frames for pose detection.
+ */
 @OptIn(ExperimentalGetImage::class)
 @Composable
 fun PoseDetectionCameraView(viewModel: WorkoutViewModel, onBack: () -> Unit) {
     val executor = remember { Executors.newSingleThreadExecutor() }
     val scope = rememberCoroutineScope()
     
+    // Tracking image dimensions and detected pose
     var detectedPose by remember { mutableStateOf<Pose?>(null) }
     var imageWidth by remember { mutableIntStateOf(480) }
     var imageHeight by remember { mutableIntStateOf(640) }
     
+    // UI state for exercise selection and session timing
     var exerciseType by remember { mutableStateOf<ExerciseType>(ExerciseType.Squat) }
     val startTime = remember { System.currentTimeMillis() }
     
+    // Logic managers for pose detection and form analysis
     val poseDetectorManager = remember { PoseDetectorManager() }
     val formAnalyzer = remember { ExerciseFormAnalyzer() }
 
+    // Configures the CameraX ImageAnalysis use case
     val imageAnalysis = remember {
         ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -100,6 +114,7 @@ fun PoseDetectionCameraView(viewModel: WorkoutViewModel, onBack: () -> Unit) {
                     val rotation = imageProxy.imageInfo.rotationDegrees
                     val isRotated = rotation == 90 || rotation == 270
                     
+                    // Standardize coordinate system
                     val currentWidth = if (isRotated) imageProxy.height else imageProxy.width
                     val currentHeight = if (isRotated) imageProxy.width else imageProxy.height
                     
@@ -112,23 +127,26 @@ fun PoseDetectionCameraView(viewModel: WorkoutViewModel, onBack: () -> Unit) {
                         val mediaImage = imageProxy.image
                         if (mediaImage != null) {
                             val image = InputImage.fromMediaImage(mediaImage, rotation)
+                            // Run on-device pose detection
                             val pose = poseDetectorManager.detectPose(image)
                             if (pose != null) {
                                 detectedPose = pose
                             }
                         }
-                        imageProxy.close()
+                        imageProxy.close() // CRITICAL: Free the frame for the next analysis
                     }
                 }
             }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Raw camera feed
         CameraPreview(
             modifier = Modifier.fillMaxSize(),
             useCases = listOf(imageAnalysis)
         )
 
+        // SVG-style skeleton overlay rendered on top of the video
         detectedPose?.let { pose ->
             PoseOverlay(
                 pose = pose,
@@ -137,7 +155,8 @@ fun PoseDetectionCameraView(viewModel: WorkoutViewModel, onBack: () -> Unit) {
             )
         }
 
-        // Floating Back Button
+        // --- UI CONTROLS ---
+        
         IconButton(
             onClick = onBack,
             modifier = Modifier
@@ -148,7 +167,7 @@ fun PoseDetectionCameraView(viewModel: WorkoutViewModel, onBack: () -> Unit) {
             Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
         }
 
-        // Exercise Selection
+        // Exercise selector chips
         Card(
             modifier = Modifier
                 .statusBarsPadding()
@@ -178,6 +197,7 @@ fun PoseDetectionCameraView(viewModel: WorkoutViewModel, onBack: () -> Unit) {
             }
         }
 
+        // Real-time form feedback processing
         val feedback = remember(detectedPose, exerciseType) {
             detectedPose?.let { pose ->
                 val analysis = pose.toPoseAnalysis()
@@ -190,6 +210,7 @@ fun PoseDetectionCameraView(viewModel: WorkoutViewModel, onBack: () -> Unit) {
             }
         }
 
+        // Feedback Card (displayed at bottom center)
         if (feedback != null) {
             Card(
                 modifier = Modifier
@@ -225,7 +246,7 @@ fun PoseDetectionCameraView(viewModel: WorkoutViewModel, onBack: () -> Unit) {
             }
         }
 
-        // Finish Workout Button
+        // Completion button: Saves the session data to the repository
         Button(
             onClick = {
                 val durationMillis = System.currentTimeMillis() - startTime
@@ -266,6 +287,7 @@ fun PoseDetectionCameraView(viewModel: WorkoutViewModel, onBack: () -> Unit) {
         }
     }
 
+    // Ensure resources are released when the user leaves the screen
     DisposableEffect(Unit) {
         onDispose {
             executor.shutdown()
@@ -274,6 +296,9 @@ fun PoseDetectionCameraView(viewModel: WorkoutViewModel, onBack: () -> Unit) {
     }
 }
 
+/**
+ * Small UI component for exercise selection.
+ */
 @Composable
 fun ExerciseChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Surface(
@@ -290,11 +315,16 @@ fun ExerciseChip(text: String, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
+/**
+ * Draws the detected skeleton (joints and connections) on top of the camera preview.
+ */
 @Composable
 fun PoseOverlay(pose: Pose, imageWidth: Int, imageHeight: Int) {
     Canvas(modifier = Modifier.fillMaxSize()) {
         val canvasWidth = size.width
         val canvasHeight = size.height
+        
+        // Map ML Kit coordinates (pixels) to screen coordinates (DP)
         val scaleX = canvasWidth / imageWidth
         val scaleY = canvasHeight / imageHeight
         
@@ -304,6 +334,7 @@ fun PoseOverlay(pose: Pose, imageWidth: Int, imageHeight: Int) {
 
         drawPoseConnections(this, pose, ::transform)
         
+        // Draw individual joint points
         for (landmark in pose.allPoseLandmarks) {
             val offset = transform(landmark.position.x, landmark.position.y)
             drawCircle(
@@ -315,6 +346,9 @@ fun PoseOverlay(pose: Pose, imageWidth: Int, imageHeight: Int) {
     }
 }
 
+/**
+ * Internal logic for connecting individual pose landmarks into a visible skeleton.
+ */
 private fun drawPoseConnections(
     drawScope: androidx.compose.ui.graphics.drawscope.DrawScope, 
     pose: Pose,
@@ -336,6 +370,7 @@ private fun drawPoseConnections(
         }
     }
 
+    // Human skeleton structure
     drawLine(PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW)
     drawLine(PoseLandmark.LEFT_ELBOW, PoseLandmark.LEFT_WRIST)
     drawLine(PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW)

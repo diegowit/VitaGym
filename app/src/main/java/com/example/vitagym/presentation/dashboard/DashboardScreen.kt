@@ -26,6 +26,19 @@ import com.example.vitagym.presentation.classes.WorkoutViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Main dashboard screen that provides a summary of user activity,
+ * weekly statistics, and access to key features like the AI Trainer and QR Check-in.
+ *
+ * @param viewModel The shared workout view model for data observation.
+ * @param onLogout Callback to handle user logout.
+ * @param onNavigateToHistory Callback to navigate to workout history.
+ * @param onNavigateToLocation Callback to navigate to gym locator.
+ * @param onNavigateToAITrainer Callback to start the AI trainer session.
+ * @param onNavigateToQRScanner Callback to open the QR check-in scanner.
+ * @param onNavigateToCheckInHistory Callback to view gym check-in history.
+ * @param onNavigateToLogWorkout Callback to manually log a workout.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -38,10 +51,12 @@ fun DashboardScreen(
     onNavigateToCheckInHistory: () -> Unit,
     onNavigateToLogWorkout: () -> Unit
 ) {
+    // Repository to access user profile and logout functionality
     val authRepository = remember { AuthRepository() }
     val currentUser = authRepository.getCurrentUser()
     val userName = currentUser?.displayName ?: currentUser?.email?.substringBefore("@") ?: "User"
 
+    // Observes real-time weekly performance stats from the ViewModel
     val weeklyStats by viewModel.weeklyStats.collectAsStateWithLifecycle()
 
     val scrollState = rememberScrollState()
@@ -71,7 +86,7 @@ fun DashboardScreen(
                 }
             )
         }
-        // bottomBar is now globally managed in NavigationWrapper.kt
+        // Note: The Bottom Navigation Bar is managed globally in NavigationWrapper.kt
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -80,7 +95,8 @@ fun DashboardScreen(
                 .verticalScroll(scrollState)
                 .padding(horizontal = 20.dp)
         ) {
-            // Header Section
+            // --- HEADER SECTION ---
+            // Displays the current date, a welcome message, and user avatar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -101,16 +117,14 @@ fun DashboardScreen(
                     )
                 }
 
+                // Initial-based User Avatar
                 Box(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
                         .background(
                             brush = Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0xFF00E5FF),
-                                    Color(0xFF0099B3)
-                                )
+                                colors = listOf(Color(0xFF00E5FF), Color(0xFF0099B3))
                             )
                         ),
                     contentAlignment = Alignment.Center
@@ -126,6 +140,8 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // --- WEEKLY SCHEDULE SECTION ---
+            // Horizontal row showing the next few days of tracking
             Text(
                 text = "Weekly Schedule",
                 fontSize = 18.sp,
@@ -137,14 +153,20 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // --- QR CHECK-IN CARD ---
+            // Direct access to gym check-in via QR code scanning
             QRCheckInCard(onQRCheckInClick = onNavigateToQRScanner)
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // --- AI TRAINER CARD ---
+            // Primary interactive feature for guided workouts using pose detection
             AITrainerCard(onAITrainerClick = onNavigateToAITrainer)
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // --- WEEKLY PERFORMANCE SUMMARY ---
+            // Visual report of the user's progress in the last 7 days
             Text(
                 text = "Weekly Performance",
                 fontSize = 18.sp,
@@ -154,12 +176,15 @@ fun DashboardScreen(
             )
             GymStatsCard(weeklyStats = weeklyStats)
 
-            // Buffer spacing to prevent content from being cut off by the floating bottom bar
+            // Spacing buffer to ensure scrollable content isn't obscured by the floating nav bar
             Spacer(modifier = Modifier.height(140.dp))
         }
     }
 }
 
+/**
+ * Renders a small horizontal calendar view.
+ */
 @Composable
 private fun WeeklyCalendar() {
     val calendar = Calendar.getInstance()
@@ -168,7 +193,7 @@ private fun WeeklyCalendar() {
         calendar.add(Calendar.DAY_OF_MONTH, if (offset == 0) 0 else 1)
         dateFormat.format(calendar.time)
     }
-    val selectedDay = 0
+    val selectedDay = 0 // Today is always the first index
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -181,11 +206,7 @@ private fun WeeklyCalendar() {
                     .height(70.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(
-                        if (index == selectedDay) {
-                            Color(0xFF00E5FF)
-                        } else {
-                            Color(0xFF2E3548)
-                        }
+                        if (index == selectedDay) Color(0xFF00E5FF) else Color(0xFF2E3548)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -201,14 +222,15 @@ private fun WeeklyCalendar() {
     }
 }
 
+/**
+ * Interactive card for launching the QR scanner.
+ */
 @Composable
 private fun QRCheckInCard(onQRCheckInClick: () -> Unit) {
     Card(
         onClick = onQRCheckInClick,
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(24.dp)
     ) {
         Box(
@@ -216,10 +238,7 @@ private fun QRCheckInCard(onQRCheckInClick: () -> Unit) {
                 .fillMaxWidth()
                 .background(
                     brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            Color(0xFF00E5FF),
-                            Color(0xFF0099B3)
-                        )
+                        colors = listOf(Color(0xFF00E5FF), Color(0xFF0099B3))
                     ),
                     shape = RoundedCornerShape(24.dp)
                 )
@@ -230,9 +249,7 @@ private fun QRCheckInCard(onQRCheckInClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .size(56.dp)
@@ -276,20 +293,19 @@ private fun QRCheckInCard(onQRCheckInClick: () -> Unit) {
     }
 }
 
+/**
+ * Redesigned AI Trainer card with visual cues for interactivity (glow, chevron, CTA).
+ */
 @Composable
 private fun AITrainerCard(onAITrainerClick: () -> Unit) {
     Card(
         onClick = onAITrainerClick,
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF2E3548)
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF2E3548)),
         shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.3f))
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -336,26 +352,18 @@ private fun AITrainerCard(onAITrainerClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Summary of AI capabilities
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                StatItem(
-                    icon = "⏱️",
-                    value = "45",
-                    label = "Minutes",
-                    color = Color(0xFF00E5FF)
-                )
-                StatItem(
-                    icon = "💪",
-                    value = "12",
-                    label = "Exercises",
-                    color = Color(0xFF00E5FF)
-                )
+                StatItem(icon = "⏱️", value = "45", label = "Minutes", color = Color(0xFF00E5FF))
+                StatItem(icon = "💪", value = "12", label = "Exercises", color = Color(0xFF00E5FF))
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Primary Call-to-Action Bar
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -385,47 +393,30 @@ private fun AITrainerCard(onAITrainerClick: () -> Unit) {
     }
 }
 
+/**
+ * Reusable stat item for the AI Trainer card.
+ */
 @Composable
-private fun StatItem(
-    icon: String,
-    value: String,
-    label: String,
-    color: Color
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = icon,
-            fontSize = 20.sp
-        )
+private fun StatItem(icon: String, value: String, label: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = icon, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = value,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            color = Color(0xFF8E8E93)
-        )
+        Text(text = value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = color)
+        Text(text = label, fontSize = 11.sp, color = Color(0xFF8E8E93))
     }
 }
 
+/**
+ * Grid of statistics summarizing the current week's activity.
+ */
 @Composable
 private fun GymStatsCard(weeklyStats: WeeklyStats) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF2E3548)
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF2E3548)),
         shape = RoundedCornerShape(24.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -446,6 +437,7 @@ private fun GymStatsCard(weeklyStats: WeeklyStats) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Row 1: Time and Exercises
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -456,7 +448,6 @@ private fun GymStatsCard(weeklyStats: WeeklyStats) {
                     value = weeklyStats.totalMinutes.toString(),
                     label = "minutes"
                 )
-
                 MiniStatCard(
                     icon = "🏋️",
                     title = "Exercises",
@@ -467,6 +458,7 @@ private fun GymStatsCard(weeklyStats: WeeklyStats) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Row 2: Reps and Streak
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -477,7 +469,6 @@ private fun GymStatsCard(weeklyStats: WeeklyStats) {
                     value = weeklyStats.totalReps.toString(),
                     label = "repetitions"
                 )
-
                 MiniStatCard(
                     icon = "🔥",
                     title = "Day Streak",
@@ -489,13 +480,11 @@ private fun GymStatsCard(weeklyStats: WeeklyStats) {
     }
 }
 
+/**
+ * Reusable card component for small numeric statistics.
+ */
 @Composable
-private fun RowScope.MiniStatCard(
-    icon: String,
-    title: String,
-    value: String,
-    label: String
-) {
+private fun RowScope.MiniStatCard(icon: String, title: String, value: String, label: String) {
     Box(
         modifier = Modifier
             .weight(1f)
@@ -520,11 +509,7 @@ private fun RowScope.MiniStatCard(
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
-                Text(
-                    text = label,
-                    fontSize = 10.sp,
-                    color = Color(0xFF8E8E93)
-                )
+                Text(text = label, fontSize = 10.sp, color = Color(0xFF8E8E93))
             }
         }
     }
