@@ -125,7 +125,6 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // NEW: Weekly Schedule Title
             Text(
                 text = "Weekly Schedule",
                 fontSize = 18.sp,
@@ -145,7 +144,6 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // NEW: Weekly Progress Title
             Text(
                 text = "Weekly Performance",
                 fontSize = 18.sp,
@@ -333,21 +331,21 @@ private fun AITrainerCard(onAITrainerClick: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 StatItem(
-                    icon = "🏋️",
-                    value = "3",
-                    label = "Workouts",
+                    icon = "🔥",
+                    value = "250",
+                    label = "Calories",
+                    color = Color(0xFFFF6B6B)
+                )
+                StatItem(
+                    icon = "⏱️",
+                    value = "45",
+                    label = "Minutes",
                     color = Color(0xFF00E5FF)
                 )
                 StatItem(
                     icon = "💪",
                     value = "12",
                     label = "Exercises",
-                    color = Color(0xFF00E5FF)
-                )
-                StatItem(
-                    icon = "⏱️",
-                    value = "30",
-                    label = "Min each",
                     color = Color(0xFF00E5FF)
                 )
             }
@@ -408,7 +406,7 @@ private fun GymStatsCard(weeklyStats: WeeklyStats) {
                     color = Color.White
                 )
                 Text(
-                    text = "${weeklyStats.totalWorkouts} workouts",
+                    text = "${weeklyStats.totalWorkouts} sessions",
                     fontSize = 12.sp,
                     color = Color(0xFF00E5FF)
                 )
@@ -422,14 +420,16 @@ private fun GymStatsCard(weeklyStats: WeeklyStats) {
             ) {
                 MiniStatCard(
                     icon = "⏱️",
+                    title = "Total Time",
                     value = weeklyStats.totalMinutes.toString(),
                     label = "minutes"
                 )
 
                 MiniStatCard(
                     icon = "🏋️",
+                    title = "Exercises",
                     value = weeklyStats.totalExercises.toString(),
-                    label = "exercises"
+                    label = "completed"
                 )
             }
 
@@ -441,14 +441,16 @@ private fun GymStatsCard(weeklyStats: WeeklyStats) {
             ) {
                 MiniStatCard(
                     icon = "💪",
+                    title = "Total Reps",
                     value = weeklyStats.totalReps.toString(),
-                    label = "total reps"
+                    label = "repetitions"
                 )
 
                 MiniStatCard(
                     icon = "🔥",
+                    title = "Day Streak",
                     value = weeklyStats.currentStreak.toString(),
-                    label = "day streak"
+                    label = "active days"
                 )
             }
         }
@@ -458,13 +460,14 @@ private fun GymStatsCard(weeklyStats: WeeklyStats) {
 @Composable
 private fun RowScope.MiniStatCard(
     icon: String,
+    title: String,
     value: String,
     label: String
 ) {
     Box(
         modifier = Modifier
             .weight(1f)
-            .height(80.dp)
+            .height(100.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(Color(0xFF3D4459))
             .padding(12.dp)
@@ -473,14 +476,15 @@ private fun RowScope.MiniStatCard(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = icon,
-                fontSize = 16.sp
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = icon, fontSize = 14.sp)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = title, fontSize = 11.sp, color = Color(0xFF8E8E93), fontWeight = FontWeight.Medium)
+            }
             Column {
                 Text(
                     text = value,
-                    fontSize = 18.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
