@@ -8,11 +8,11 @@ import androidx.camera.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,7 +27,10 @@ import com.example.vitagym.data.ml.ExerciseFormAnalyzer
 import com.example.vitagym.data.ml.ExerciseType
 import com.example.vitagym.data.ml.PoseDetectorManager
 import com.example.vitagym.data.ml.toPoseAnalysis
+import com.example.vitagym.domain.model.Exercise
+import com.example.vitagym.domain.model.WorkoutType
 import com.example.vitagym.presentation.aitrainer.camera.CameraPreview
+import com.example.vitagym.presentation.classes.WorkoutViewModel
 import com.example.vitagym.util.CameraPermissionHelper
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.pose.Pose
@@ -37,7 +39,7 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 
 @Composable
-fun AITrainerScreen(onBack: () -> Unit) {
+fun AITrainerScreen(viewModel: WorkoutViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
     var hasCameraPermission by remember {
         mutableStateOf(CameraPermissionHelper.hasCameraPermission(context))
@@ -56,7 +58,7 @@ fun AITrainerScreen(onBack: () -> Unit) {
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (hasCameraPermission) {
-            PoseDetectionCameraView(onBack = onBack)
+            PoseDetectionCameraView(viewModel = viewModel, onBack = onBack)
         } else {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -75,7 +77,7 @@ fun AITrainerScreen(onBack: () -> Unit) {
 
 @OptIn(ExperimentalGetImage::class)
 @Composable
-fun PoseDetectionCameraView(onBack: () -> Unit) {
+fun PoseDetectionCameraView(viewModel: WorkoutViewModel, onBack: () -> Unit) {
     val executor = remember { Executors.newSingleThreadExecutor() }
     val scope = rememberCoroutineScope()
     
@@ -84,6 +86,7 @@ fun PoseDetectionCameraView(onBack: () -> Unit) {
     var imageHeight by remember { mutableIntStateOf(640) }
     
     var exerciseType by remember { mutableStateOf<ExerciseType>(ExerciseType.Squat) }
+    val startTime = remember { System.currentTimeMillis() }
     
     val poseDetectorManager = remember { PoseDetectorManager() }
     val formAnalyzer = remember { ExerciseFormAnalyzer() }
@@ -121,13 +124,11 @@ fun PoseDetectionCameraView(onBack: () -> Unit) {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Full screen Camera Preview
         CameraPreview(
             modifier = Modifier.fillMaxSize(),
             useCases = listOf(imageAnalysis)
         )
 
-        // Pose skeleton overlay
         detectedPose?.let { pose ->
             PoseOverlay(
                 pose = pose,
@@ -147,7 +148,7 @@ fun PoseDetectionCameraView(onBack: () -> Unit) {
             Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
         }
 
-        // Exercise Selection (Top center, below back button)
+        // Exercise Selection
         Card(
             modifier = Modifier
                 .statusBarsPadding()
@@ -177,7 +178,6 @@ fun PoseDetectionCameraView(onBack: () -> Unit) {
             }
         }
 
-        // Feedback Card (Bottom Center)
         val feedback = remember(detectedPose, exerciseType) {
             detectedPose?.let { pose ->
                 val analysis = pose.toPoseAnalysis()
@@ -194,7 +194,7 @@ fun PoseDetectionCameraView(onBack: () -> Unit) {
             Card(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 32.dp)
+                    .padding(bottom = 100.dp)
                     .fillMaxWidth(0.85f),
                 colors = CardDefaults.cardColors(
                     containerColor = if (feedback.isCorrect) Color(0xFF00E676) else Color(0xFFFF5252)
@@ -223,6 +223,46 @@ fun PoseDetectionCameraView(onBack: () -> Unit) {
                     }
                 }
             }
+        }
+
+        // Finish Workout Button
+        Button(
+            onClick = {
+                val durationMillis = System.currentTimeMillis() - startTime
+                val durationMinutes = (durationMillis / 60000).toInt().coerceAtLeast(1)
+                
+                val currentRepCount = feedback?.repCount ?: 0
+                val exerciseName = when(exerciseType) {
+                    ExerciseType.Squat -> "Squats"
+                    ExerciseType.PushUp -> "Push-ups"
+                    ExerciseType.Plank -> "Plank"
+                    else -> "Exercise"
+                }
+
+                val workoutType = when(exerciseType) {
+                    ExerciseType.Squat -> WorkoutType.SQUATS
+                    ExerciseType.PushUp -> WorkoutType.PUSH_UPS
+                    ExerciseType.Plank -> WorkoutType.PLANKS
+                    else -> WorkoutType.CUSTOM
+                }
+
+                viewModel.addAIWorkout(
+                    workoutType = workoutType,
+                    completedExercises = listOf(Exercise(name = exerciseName, reps = currentRepCount, sets = 1)),
+                    actualDuration = durationMinutes
+                )
+                onBack()
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 32.dp)
+                .fillMaxWidth(0.85f),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF1A1A2E))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Finish Workout", color = Color(0xFF1A1A2E), fontWeight = FontWeight.Bold)
         }
     }
 
@@ -255,11 +295,9 @@ fun PoseOverlay(pose: Pose, imageWidth: Int, imageHeight: Int) {
     Canvas(modifier = Modifier.fillMaxSize()) {
         val canvasWidth = size.width
         val canvasHeight = size.height
-        
         val scaleX = canvasWidth / imageWidth
         val scaleY = canvasHeight / imageHeight
         
-        // Front camera is mirrored, so we need to flip the X coordinate
         fun transform(x: Float, y: Float): Offset {
             return Offset(canvasWidth - (x * scaleX), y * scaleY)
         }
@@ -270,7 +308,7 @@ fun PoseOverlay(pose: Pose, imageWidth: Int, imageHeight: Int) {
             val offset = transform(landmark.position.x, landmark.position.y)
             drawCircle(
                 color = Color.Cyan,
-                radius = 10f, // Increased radius
+                radius = 10f,
                 center = offset
             )
         }
@@ -283,7 +321,7 @@ private fun drawPoseConnections(
     transform: (Float, Float) -> Offset
 ) {
     val color = Color.Green
-    val strokeWidth = 8f // Increased stroke width
+    val strokeWidth = 8f
 
     fun drawLine(from: Int, to: Int) {
         val start = pose.getPoseLandmark(from)
@@ -298,7 +336,6 @@ private fun drawPoseConnections(
         }
     }
 
-    // Connect joints
     drawLine(PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW)
     drawLine(PoseLandmark.LEFT_ELBOW, PoseLandmark.LEFT_WRIST)
     drawLine(PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW)

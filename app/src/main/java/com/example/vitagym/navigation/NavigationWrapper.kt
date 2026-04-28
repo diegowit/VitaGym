@@ -75,7 +75,7 @@ fun NavigationWrapper() {
                 onNavigateToCheckInHistory = {
                     navController.navigate(CheckInHistory)
                 },
-                onNavigateToLogWorkout = {  // ← ADD THIS LINE
+                onNavigateToLogWorkout = {
                     navController.navigate(LogWorkout)
                 }
             )
@@ -96,6 +96,7 @@ fun NavigationWrapper() {
 
         composable<AITrainer> {
             AITrainerScreen(
+                viewModel = workoutViewModel,
                 onBack = { navController.popBackStack() }
             )
         }

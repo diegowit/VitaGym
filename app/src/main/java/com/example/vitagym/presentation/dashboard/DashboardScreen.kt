@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.vitagym.domain.model.WeeklyStats
 import com.example.vitagym.presentation.auth.AuthRepository
 import com.example.vitagym.presentation.classes.WorkoutViewModel
 import java.text.SimpleDateFormat
@@ -33,11 +35,14 @@ fun DashboardScreen(
     onNavigateToAITrainer: () -> Unit,
     onNavigateToQRScanner: () -> Unit,
     onNavigateToCheckInHistory: () -> Unit,
-    onNavigateToLogWorkout: () -> Unit  // ADDED THIS
+    onNavigateToLogWorkout: () -> Unit
 ) {
     val authRepository = remember { AuthRepository() }
     val currentUser = authRepository.getCurrentUser()
     val userName = currentUser?.displayName ?: currentUser?.email?.substringBefore("@") ?: "User"
+
+    // Collect real stats from ViewModel
+    val weeklyStats by viewModel.weeklyStats.collectAsStateWithLifecycle()
 
     val scrollState = rememberScrollState()
     val currentDate = remember {
@@ -120,6 +125,14 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // NEW: Weekly Schedule Title
+            Text(
+                text = "Weekly Schedule",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
             WeeklyCalendar()
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -130,9 +143,17 @@ fun DashboardScreen(
 
             AITrainerCard(onAITrainerClick = onNavigateToAITrainer)
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            GymStatsCard()
+            // NEW: Weekly Progress Title
+            Text(
+                text = "Weekly Performance",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            GymStatsCard(weeklyStats = weeklyStats)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -140,7 +161,7 @@ fun DashboardScreen(
                 onFindGymsClick = onNavigateToLocation,
                 onHistoryClick = onNavigateToHistory,
                 onCheckInHistoryClick = onNavigateToCheckInHistory,
-                onLogWorkoutClick = onNavigateToLogWorkout  // ADDED THIS
+                onLogWorkoutClick = onNavigateToLogWorkout
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -312,21 +333,21 @@ private fun AITrainerCard(onAITrainerClick: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 StatItem(
-                    icon = "🔥",
-                    value = "250",
-                    label = "Cal/session",
-                    color = Color(0xFFFF6B6B)
-                )
-                StatItem(
-                    icon = "⏱️",
-                    value = "45",
-                    label = "Minutes",
+                    icon = "🏋️",
+                    value = "3",
+                    label = "Workouts",
                     color = Color(0xFF00E5FF)
                 )
                 StatItem(
                     icon = "💪",
                     value = "12",
                     label = "Exercises",
+                    color = Color(0xFF00E5FF)
+                )
+                StatItem(
+                    icon = "⏱️",
+                    value = "30",
+                    label = "Min each",
                     color = Color(0xFF00E5FF)
                 )
             }
@@ -364,7 +385,7 @@ private fun StatItem(
 }
 
 @Composable
-private fun GymStatsCard() {
+private fun GymStatsCard(weeklyStats: WeeklyStats) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -387,7 +408,7 @@ private fun GymStatsCard() {
                     color = Color.White
                 )
                 Text(
-                    text = "4 workouts",
+                    text = "${weeklyStats.totalWorkouts} workouts",
                     fontSize = 12.sp,
                     color = Color(0xFF00E5FF)
                 )
@@ -400,15 +421,15 @@ private fun GymStatsCard() {
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 MiniStatCard(
-                    icon = "❤️",
-                    value = "88",
-                    label = "avg bpm"
+                    icon = "⏱️",
+                    value = weeklyStats.totalMinutes.toString(),
+                    label = "minutes"
                 )
 
                 MiniStatCard(
-                    icon = "🔥",
-                    value = "1.2k",
-                    label = "calories"
+                    icon = "🏋️",
+                    value = weeklyStats.totalExercises.toString(),
+                    label = "exercises"
                 )
             }
 
@@ -419,14 +440,14 @@ private fun GymStatsCard() {
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 MiniStatCard(
-                    icon = "⏱️",
-                    value = "3.5",
-                    label = "hours"
+                    icon = "💪",
+                    value = weeklyStats.totalReps.toString(),
+                    label = "total reps"
                 )
 
                 MiniStatCard(
-                    icon = "📈",
-                    value = "12",
+                    icon = "🔥",
+                    value = weeklyStats.currentStreak.toString(),
                     label = "day streak"
                 )
             }
@@ -478,7 +499,7 @@ private fun QuickActionsSection(
     onFindGymsClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onCheckInHistoryClick: () -> Unit,
-    onLogWorkoutClick: () -> Unit  // ADDED THIS
+    onLogWorkoutClick: () -> Unit
 ) {
     Text(
         text = "Quick Actions",
@@ -491,7 +512,6 @@ private fun QuickActionsSection(
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // First Row - Log Workout (Primary) + Find Gyms
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -500,7 +520,7 @@ private fun QuickActionsSection(
                 icon = Icons.Default.Add,
                 label = "Log Workout",
                 onClick = onLogWorkoutClick,
-                isPrimary = true  // Cyan highlight
+                isPrimary = true
             )
             QuickActionButton(
                 icon = Icons.Default.LocationOn,
@@ -509,7 +529,6 @@ private fun QuickActionsSection(
             )
         }
 
-        // Second Row - History + Check-Ins
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -533,16 +552,16 @@ private fun RowScope.QuickActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     onClick: () -> Unit,
-    isPrimary: Boolean = false  // ADDED THIS
+    isPrimary: Boolean = false
 ) {
     Card(
         onClick = onClick,
         modifier = Modifier.weight(1f),
         colors = CardDefaults.cardColors(
             containerColor = if (isPrimary) {
-                Color(0xFF00E5FF)  // Cyan for primary action
+                Color(0xFF00E5FF)
             } else {
-                Color(0xFF2E3548)  // Dark for others
+                Color(0xFF2E3548)
             }
         ),
         shape = RoundedCornerShape(16.dp)
@@ -557,9 +576,9 @@ private fun RowScope.QuickActionButton(
                 imageVector = icon,
                 contentDescription = null,
                 tint = if (isPrimary) {
-                    Color(0xFF1A1A2E)  // Dark icon on cyan
+                    Color(0xFF1A1A2E)
                 } else {
-                    Color(0xFF00E5FF)  // Cyan icon on dark
+                    Color(0xFF00E5FF)
                 },
                 modifier = Modifier.size(28.dp)
             )
@@ -568,9 +587,9 @@ private fun RowScope.QuickActionButton(
                 text = label,
                 fontSize = 12.sp,
                 color = if (isPrimary) {
-                    Color(0xFF1A1A2E)  // Dark text on cyan
+                    Color(0xFF1A1A2E)
                 } else {
-                    Color.White  // White text on dark
+                    Color.White
                 },
                 fontWeight = if (isPrimary) FontWeight.Bold else FontWeight.Medium
             )
