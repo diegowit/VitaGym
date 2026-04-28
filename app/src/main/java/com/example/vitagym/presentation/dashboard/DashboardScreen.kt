@@ -70,84 +70,8 @@ fun DashboardScreen(
                     }
                 }
             )
-        },
-        bottomBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 28.dp)
-                    .navigationBarsPadding()
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(72.dp),
-                    shape = RoundedCornerShape(36.dp),
-                    color = Color(0xFF25253D),
-                    shadowElevation = 24.dp,
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-                ) {
-                    NavigationBar(
-                        containerColor = Color.Transparent,
-                        windowInsets = WindowInsets(0.dp)
-                    ) {
-                        NavigationBarItem(
-                            icon = { Icon(Icons.Default.Home, contentDescription = "Home", modifier = Modifier.size(24.dp)) },
-                            label = { Text("Home", fontSize = 10.sp) },
-                            selected = true,
-                            onClick = { },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color(0xFF1A1A2E),
-                                selectedTextColor = Color(0xFF00E5FF),
-                                indicatorColor = Color(0xFF00E5FF),
-                                unselectedIconColor = Color.White.copy(alpha = 0.5f),
-                                unselectedTextColor = Color.White.copy(alpha = 0.5f)
-                            )
-                        )
-                        NavigationBarItem(
-                            icon = { Icon(Icons.Default.Add, contentDescription = "Log Workout", modifier = Modifier.size(24.dp)) },
-                            label = { Text("Log", fontSize = 10.sp) },
-                            selected = false,
-                            onClick = onNavigateToLogWorkout,
-                            colors = NavigationBarItemDefaults.colors(
-                                unselectedIconColor = Color.White.copy(alpha = 0.5f),
-                                unselectedTextColor = Color.White.copy(alpha = 0.5f)
-                            )
-                        )
-                        NavigationBarItem(
-                            icon = { Icon(Icons.Default.History, contentDescription = "History", modifier = Modifier.size(24.dp)) },
-                            label = { Text("History", fontSize = 10.sp) },
-                            selected = false,
-                            onClick = onNavigateToHistory,
-                            colors = NavigationBarItemDefaults.colors(
-                                unselectedIconColor = Color.White.copy(alpha = 0.5f),
-                                unselectedTextColor = Color.White.copy(alpha = 0.5f)
-                            )
-                        )
-                        NavigationBarItem(
-                            icon = { Icon(Icons.Default.LocationOn, contentDescription = "Gyms", modifier = Modifier.size(24.dp)) },
-                            label = { Text("Gyms", fontSize = 10.sp) },
-                            selected = false,
-                            onClick = onNavigateToLocation,
-                            colors = NavigationBarItemDefaults.colors(
-                                unselectedIconColor = Color.White.copy(alpha = 0.5f),
-                                unselectedTextColor = Color.White.copy(alpha = 0.5f)
-                            )
-                        )
-                        NavigationBarItem(
-                            icon = { Icon(Icons.Default.Receipt, contentDescription = "Check-ins", modifier = Modifier.size(24.dp)) },
-                            label = { Text("Checks", fontSize = 10.sp) },
-                            selected = false,
-                            onClick = onNavigateToCheckInHistory,
-                            colors = NavigationBarItemDefaults.colors(
-                                unselectedIconColor = Color.White.copy(alpha = 0.5f),
-                                unselectedTextColor = Color.White.copy(alpha = 0.5f)
-                            )
-                        )
-                    }
-                }
-            }
         }
+        // bottomBar is now globally managed in NavigationWrapper.kt
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -156,6 +80,7 @@ fun DashboardScreen(
                 .verticalScroll(scrollState)
                 .padding(horizontal = 20.dp)
         ) {
+            // Header Section
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -229,6 +154,7 @@ fun DashboardScreen(
             )
             GymStatsCard(weeklyStats = weeklyStats)
 
+            // Buffer spacing to prevent content from being cut off by the floating bottom bar
             Spacer(modifier = Modifier.height(140.dp))
         }
     }
